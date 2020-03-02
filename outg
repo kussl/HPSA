@@ -1,0 +1,3 @@
+dot -O -Tpdf solution/graph.dot;
+#dot -O -Tpdf p_solution/x.dot
+#dot -O -Tpdf graph.dot;
