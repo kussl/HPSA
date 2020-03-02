@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3.7
+#!/usr/local/bin/python
 
 import csv,os,sys,datetime
 from os import listdir

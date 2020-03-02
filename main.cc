@@ -20,7 +20,7 @@
 #define HPSA_PATH std::string(std::getenv("HPSA_PATH")) 
 #define SOL_PATH (HPSA_PATH + std::string("/solution/"))
 #define P_SOL_PATH (HPSA_PATH + std::string("/p_solution/"))
-#define BARON_RES_PATH (HPSA_PATH + std::string("/baron/"))
+#define BARON_RES_PATH (HPSA_PATH + std::string("/baron"))
 
 //#define EACH_RULE_CANDIDATE 1
 
@@ -67,18 +67,12 @@ void baron_interface(Graph G, std::string name){
 	int status;
 
 	if ((pid = fork()) == 0){
-		cout<<"Child executing.\n"; 
-		cout<<"Child done.\n";	
 		int ret = execl(BARON_PATH.c_str(), "baron", 
-			name.c_str());
-		cout<<"Child returned: "<<ret<<endl;
+			name.c_str(), NULL);
 		exit(0);  
 	}
 	else { 
-		cout<<"Parent waiting.\n"; 
 		waitpid(pid, &status, 0);
-		
-	    cout<<"Exit successful.\n";
 	}
 }
 
@@ -107,7 +101,7 @@ void baron_interface(std::vector<std::string> &names){
 		for(i=0; i<names.size()-1;++i){
 			if ((pid = fork()) == 0){
 				int ret = execl(BARON_PATH.c_str(), "baron", 
-					names[i].c_str());
+					names[i].c_str(), NULL);
 				cout<<"Error in executing BARON: "<<ret<<endl;
 				exit(0);  
 			}
@@ -214,7 +208,7 @@ void collectres(size_t size){
 
 	if ((pid = fork()) == 0){
 		int ret = execl(path.c_str(), "readres.py", 
-			sizestr.c_str());
+			sizestr.c_str(), NULL);
 		cout<<"Error in executing Python script: "<<ret<<endl;
 		exit(0);  
 	}
