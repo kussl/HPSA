@@ -12,7 +12,7 @@
 
 #include "omp.h"
 #include "graph.h"
-#include "AGknitro.h"
+
 
 
 #define BARON_PATH std::string(std::getenv("BARON_PATH")) 
@@ -26,7 +26,6 @@
 using namespace std;
 extern std::string create_baron_file(Graph &G, int i); 
 extern std::string create_baron_file(Graph &G, int index, std::vector<int> candidate_nodes, double improvement); 
-extern inline void printSolutionResults(knitro::KTRISolver & solver, int solveStatus); 
 
 
 void test_gen_BARON_imp_serial(int goallayers, int subgoals, int rules, int facts); 
@@ -346,35 +345,7 @@ void test_gen_BARON_imp_serial(int goallayers, int subgoals, int rules, int fact
 	collectres(2); 
 }
 
-/*
-Serial interface for KNITRO
-*/
-void test_gen_KNITRO(Graph G){
-	size_t no_vars, no_const; 
-	no_vars = no_const = G.size(); 
-	G.fillprobabilities(); 
 
-	AGProblem* problem = new AGProblem(no_vars, no_const);
-	problem->initialize(G); 
-
-
-	knitro::KTRSolver solver(problem, KTR_GRADOPT_FORWARD, KTR_HESSOPT_BFGS);
-
-	solver.setParam(KN_PARAM_DEBUG, 1);
-	//solver.setParam(KN_PARAM_NEWPOINT, 0);
-	solver.setParam(KN_PARAM_OUTLEV, 6);
-	//solver.setParam(KN_PARAM_OUTMODE, 1);
-	solver.setParam(KN_PARAM_MA_TERMINATE, 1); //local optimum 
-	solver.setParam(KN_PARAM_FINDIFF_TERMINATE, 1); 
-	solver.setParam(KN_PARAM_OPTTOL, 0.5);
-	// solver.setParam(KN_PARAM_MIP_STRONG_MAXIT, 4); 
-	// solver.setParam(KN_PARAM_CG_MAXIT, 4); 
-	//solver.setParam(KN_PARAM_MAXIT, 4); 
-	//solver.setParam(KN_PARAM_MIP_HEURISTIC_MAXIT, 2); 
-
-	int solveStatus = solver.solve();
-	printSolutionResults(solver, solveStatus);
-}
 
 
 int main(int argc, char**argv){
@@ -402,11 +373,11 @@ int main(int argc, char**argv){
 	}
 	else if (choice == 1)
 		test_gen_BARON_imp_serial(goallayers,subgoals,rules,facts);
-	// else if (choice == 2)
-	// 	test_nlopt(goallayers,subgoals,rules,facts,0);
+	/* else if (choice == 2)
+		test_nlopt(goallayers,subgoals,rules,facts,0);
 	else if (choice == 3){
 		graph_generator(G, goallayers, subgoals, rules, facts); 
 		test_gen_KNITRO(G); 
-	}
+	}*/
 	return 0;
 }
