@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <algorithm>
 #include "graph.h"
 
 std::string rule_constraints(Graph &G, Node n, int e){

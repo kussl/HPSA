@@ -9,8 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <math.h>
-#include <algorithm>
-
+#include <cstring>
 
 #include "omp.h"
 #include "graph.h"
