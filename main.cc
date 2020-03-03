@@ -31,6 +31,7 @@ extern std::string create_baron_file(Graph &G, int index, std::vector<int> candi
 
 void test_gen_BARON_imp_serial(int goallayers, int subgoals, int rules, int facts); 
 void test_gen_BARON_imp(int goallayers, int subgoals, int rules, int facts);
+void collectres(size_t size); 
 
 void timestamp(clock_t &begin_time){
 	std::cout <<"Click ticks: "<<float(clock()-begin_time)/CLOCKS_PER_SEC<<endl;
@@ -44,8 +45,6 @@ void graph_generator(Graph &G, int goallayers, int subgoals, int rules, int fact
 	G = GG.treetopology(goallayers,subgoals,rules,facts);
 	cout<<"Number of nodes: "<<G.size()<<endl; 
 }
-
-
 
 
 void baron_interface(Graph G, int i, bool bg){
@@ -78,7 +77,7 @@ void baron_interface(Graph G, std::string name){
 
 void baron_files(std::vector<Graph> X, std::vector<std::string> &names){
 	std::string path = BARON_RES_PATH; 
-	for(int i=0; i<X.size()-1;++i){
+	for(int i=0; i<X.size();++i){
 		std::string spec = create_baron_file(X[i], i);
 		std::string name = path+"/program_"+std::to_string(i)+".bar";
 
@@ -95,10 +94,11 @@ void baron_interface(std::vector<std::string> &names){
 	pid_t wpid,pid,pids[names.size()]; 
 	int status,i;
 
+
 	#pragma omp parallel private(i) //num_threads(3)  
 	{
 		#pragma omp for nowait schedule(guided) 
-		for(i=0; i<names.size()-1;++i){
+		for(i=0; i<names.size();++i){
 			if ((pid = fork()) == 0){
 				int ret = execl(BARON_PATH.c_str(), "baron", 
 					names[i].c_str(), NULL);
@@ -178,26 +178,13 @@ void test_gen_BARON(int goallayers, int subgoals, int rules, int facts){
 	programfile.open(name);
 	programfile<<spec; 
 	programfile.close();
-	baron_interface(G, name); 	
-}
-
-
-void test_gen_BARON_omp(int goallayers, int subgoals, int rules, int facts){
-	GraphGenerator GG; 
-	cout<<"Generating a synthetic AG: layers: "<<goallayers<<", subgoals: "<<subgoals<<", rules: "<<rules<<", facts: "<<facts<<endl; 
-	//int goallayers, int subgoals, int rules, int facts
-	Graph G = GG.treetopology(goallayers,subgoals,rules,facts);
-	G.print(SOL_PATH+"graph.dot");
-
-	std::vector<Graph> X = G.partitiongraph(); 
-
-	cout<<"Number of nodes: "<<G.size()<<endl; 
-	cout<<"Number of subgraphs: "<<X.size()<<endl; 
-
-
+	std::vector<Graph> X; 
 	std::vector<std::string> names;
+	X.push_back(G); 
+
 	baron_files(X, names); 
 	baron_interface(names);
+	collectres(1); 	
 }
 
 void collectres(size_t size){
@@ -217,6 +204,35 @@ void collectres(size_t size){
 
     cout<<"Done collecting results.\n";
 }
+
+/*
+	Partition the graph for parallelized probability propagation. 
+*/
+
+void test_gen_BARON_omp(int goallayers, int subgoals, int rules, int facts){
+	GraphGenerator GG; 
+	size_t size = 0; 
+
+	cout<<"Generating a synthetic AG: layers: "<<goallayers<<", subgoals: "<<subgoals<<", rules: "<<rules<<", facts: "<<facts<<endl; 
+	//int goallayers, int subgoals, int rules, int facts
+	Graph G = GG.treetopology(goallayers,subgoals,rules,facts);
+	G.print(SOL_PATH+"graph.dot");
+
+	std::vector<Graph> X = G.partitiongraph(); 
+
+	cout<<"Number of nodes: "<<G.size()<<endl; 
+	size = X.size(); 
+
+	cout<<"Number of subgraphs: "<<size<<endl; 
+
+
+	std::vector<std::string> names;
+	baron_files(X, names); 
+	baron_interface(names);
+	collectres(size); 
+}
+
+
 
 /*
 Run improvement options in parallel using a combination of openmp and BARON threads. 
@@ -243,25 +259,7 @@ void test_gen_BARON_imp(int goallayers, int subgoals, int rules, int facts, int 
 	cout<<"Number of candidate placements: "<<candidate_nodes.size()<<endl; 
 	std::vector<std::string> names;
 
-	/*
-	This for-loop goes for each rule node as a a candidate
-	*/
 
-	#ifdef EACH_RULE_CANDIDATE
-
-	for(int i =0; i<size; ++i){
-		std::vector<int> v;
-		v.push_back(candidate_nodes[i]); 
-
-		std::string spec = create_baron_file(G, i, v, improvement);
-		std::string name = BARON_RES_PATH + "/program_"+std::to_string(i)+".bar";
-		ofstream programfile; 
-		programfile.open(name);
-		programfile<<spec; 
-		programfile.close();
-		names.push_back(name); 
-	}
-	#else 
 
 	/*
 	This for-loop takes subsets of rule nodes in each iteration (more than one). 
@@ -292,8 +290,6 @@ void test_gen_BARON_imp(int goallayers, int subgoals, int rules, int facts, int 
 	}
 
 	size = P; 
-
-	#endif 
 
 	baron_interface(names); 
 	collectres(size); 
@@ -337,7 +333,7 @@ void test_gen_BARON_imp_serial(int goallayers, int subgoals, int rules, int fact
 	programfile.close();
 
 	baron_interface(G, name); 
-	collectres(2); 
+	collectres(1); 
 }
 
 
@@ -366,8 +362,15 @@ int main(int argc, char**argv){
 		int P = atoi(argv[6]); 
 		test_gen_BARON_imp(goallayers,subgoals,rules,facts,P);
 	}
-	else if (choice == 1)
+	else if (choice == 1){
 		test_gen_BARON_imp_serial(goallayers,subgoals,rules,facts);
+	}
+	else if (choice == 2){
+		test_gen_BARON_omp(goallayers,subgoals,rules,facts); 
+	}
+	else if (choice == 3){
+		test_gen_BARON(goallayers,subgoals,rules,facts); 
+	}
 	/* else if (choice == 2)
 		test_nlopt(goallayers,subgoals,rules,facts,0);
 	else if (choice == 3){

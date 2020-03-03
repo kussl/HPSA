@@ -59,4 +59,4 @@ print("Collecting results..")
 size = int(sys.argv[1])
 print('Size: ', size) 
 
-recallres(size-1)
+recallres(size)
