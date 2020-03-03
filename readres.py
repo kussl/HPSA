@@ -3,6 +3,7 @@
 import csv,os,sys,datetime
 from os import listdir
 from os.path import isfile, join
+import statistics as stats 
 
 def readtim(path,i):
 	try: 
@@ -19,7 +20,7 @@ def readres(path,i):
 	content = [x for x in content[-1].split(' ') if (x.replace('.','').replace('E-','').strip()).isnumeric() ]
 
 	obj = content[-1]
-	return float(obj) 
+	return round(float(obj), 8)
 
 
 def recallres(size):
@@ -28,8 +29,7 @@ def recallres(size):
 	fname = path+str(ts)+".csv"
 	f = open(fname,"w")
 	writer = csv.writer(f) 
-	maxobj = 0 
-	maxtime = 0 
+	data = [] 
 	for i in range(size): 
 		rec = [] 
 		t = readtim(path,i)
@@ -37,16 +37,17 @@ def recallres(size):
 			os.remove(fname)
 			return None 
 		r = readres(path,i)
-		if maxobj < r: 
-			maxobj = r 
-		if maxtime < t: 
-			maxtime = t
 		rec.append([i,t,r])
+		data.append([i,t,r])
 		writer.writerow(rec) 
 
 	f.close()
-
-	print("Max time: ", maxtime, "and max objective: ", maxobj)
+	print("Time: ", end=" ")
+	maxtime = max(data, key=lambda x: x[1])[1]
+	mintime = min(data, key=lambda x: x[1])[1]
+	maxobj = max(data, key=lambda x:x[2])[2]
+	print("Max:", maxtime, "Min:", mintime, "Avg:", (maxtime+mintime)/2)
+	print("Max objective: ", maxobj)
 
 	#Now purge the files
 	files = [f for f in listdir(path) if f.find(".tim") > -1 or f.find(".res") > -1 or f.find(".opt") > -1 or f.find("program_") > -1 ]
