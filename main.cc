@@ -1,121 +1,23 @@
 #include <iostream>
-#include <fstream>
 #include <list>
 #include <string>
 #include <ctime>
 #include <chrono>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <math.h>
 #include <cstring>
 
-#include "omp.h"
+
 #include "graph.h"
+#include "hpsa.h"
 
-
-
-#define BARON_PATH std::string(std::getenv("BARON_PATH")) 
-#define HPSA_PATH std::string(std::getenv("HPSA_PATH")) 
-#define SOL_PATH (HPSA_PATH + std::string("/solution/"))
-#define P_SOL_PATH (HPSA_PATH + std::string("/p_solution/"))
-#define BARON_RES_PATH (HPSA_PATH + std::string("/baron"))
-
-//#define EACH_RULE_CANDIDATE 1
 
 using namespace std;
-extern std::string create_baron_file(Graph &G, int i); 
-extern std::string create_baron_file(Graph &G, int index, std::vector<int> candidate_nodes, double improvement); 
-
-
-void test_gen_BARON_imp_serial(int goallayers, int subgoals, int rules, int facts); 
-void test_gen_BARON_imp(int goallayers, int subgoals, int rules, int facts);
-void collectres(size_t size); 
-
-void timestamp(clock_t &begin_time){
-	std::cout <<"Click ticks: "<<float(clock()-begin_time)/CLOCKS_PER_SEC<<endl;
-	begin_time = clock();
-}
-
-void graph_generator(Graph &G, int goallayers, int subgoals, int rules, int facts){
-	GraphGenerator GG; 
-	cout<<"Generating a synthetic AG.\n"; 
-	//int goallayers, int subgoals, int rules, int facts
-	G = GG.treetopology(goallayers,subgoals,rules,facts);
-	cout<<"Number of nodes: "<<G.size()<<endl; 
-}
-
-
-void baron_interface(Graph G, int i, bool bg){
-	std::string spec = create_baron_file(G, i); 
-	std::string name = BARON_RES_PATH+"/program_"+std::to_string(i)+".bar";
-	ofstream programfile; 
-	programfile.open(name);
-	programfile<<spec; 
-	programfile.close();
-
-	if (!bg)
-		system(("baron "+name + " &").c_str());
-	else 
-		system(("baron "+name).c_str());
-}
-
-void baron_interface(Graph G, std::string name){
-	pid_t pid; 
-	int status;
-
-	if ((pid = fork()) == 0){
-		int ret = execl(BARON_PATH.c_str(), "baron", 
-			name.c_str(), NULL);
-		exit(0);  
-	}
-	else { 
-		waitpid(pid, &status, 0);
-	}
-}
-
-void baron_files(std::vector<Graph> X, std::vector<std::string> &names){
-	std::string path = BARON_RES_PATH; 
-	for(int i=0; i<X.size();++i){
-		std::string spec = create_baron_file(X[i], i);
-		std::string name = path+"/program_"+std::to_string(i)+".bar";
-
-		ofstream programfile; 
-		programfile.open(name);
-		programfile<<spec; 
-		programfile.close();
-		names.push_back(name); 
-	}
-}
-
-void baron_interface(std::vector<std::string> &names){
-
-	pid_t wpid,pid,pids[names.size()]; 
-	int status,i;
-
-
-	#pragma omp parallel private(i) //num_threads(3)  
-	{
-		#pragma omp for nowait schedule(guided) 
-		for(i=0; i<names.size();++i){
-			if ((pid = fork()) == 0){
-				int ret = execl(BARON_PATH.c_str(), "baron", 
-					names[i].c_str(), NULL);
-				cout<<"Error in executing BARON: "<<ret<<endl;
-				exit(0);  
-			}
-		}
-	}
- 
-	cout<<"Parent waiting.\n"; 
-	// for(int i =0; i < X.size(); ++i)
-	//  	waitpid(pids[i], &status, 0);	
-	while ((wpid = wait(&status)) > 0)
-		;
-
-    cout<<"Computation done in parallel.\n";
-}
+extern void test_gen_BARON_imp_serial(Graph G); 
+extern void test_gen_BARON_imp(Graph G, int P);
+extern void test_gen_BARON_omp(Graph G); 
+extern void test_gen_BARON(Graph G); 
+extern void generate_graph(Graph &G, int goallayers, int subgoals, int rules, int facts); 
 
 void check_sol_dir(){
 	//Check if sol path exists
@@ -159,186 +61,6 @@ void check_sol_dir(){
 }
 
 
-void test_gen_BARON(int goallayers, int subgoals, int rules, int facts){
-	GraphGenerator GG; 
-	cout<<"Generating a synthetic AG: layers: "<<goallayers<<", subgoals: "<<subgoals<<", rules: "<<rules<<", facts: "<<facts<<endl; 
-	//int goallayers, int subgoals, int rules, int facts
-	Graph G = GG.treetopology(goallayers,subgoals,rules,facts);
-
-
-
-	G.print(SOL_PATH+"graph.dot");
-
-	cout<<"Number of nodes: "<<G.size()<<endl; 
-
-	std::string spec = create_baron_file(G, 0);
-	std::string path = BARON_RES_PATH; 
-	std::string name = path+"/program_"+std::to_string(0)+".bar";
-	ofstream programfile; 
-	programfile.open(name);
-	programfile<<spec; 
-	programfile.close();
-	std::vector<Graph> X; 
-	std::vector<std::string> names;
-	X.push_back(G); 
-
-	baron_files(X, names); 
-	baron_interface(names);
-	collectres(1); 	
-}
-
-void collectres(size_t size){
-	std::string sizestr = std::to_string(size); 
-	pid_t pid,wpid;
-	int status; 
-	std::string path = HPSA_PATH+"/readres.py"; 
-
-	if ((pid = fork()) == 0){
-		int ret = execl(path.c_str(), "readres.py", 
-			sizestr.c_str(), NULL);
-		cout<<"Error in executing Python script: "<<ret<<endl;
-		exit(0);  
-	}
-	while ((wpid = wait(&status)) > 0)
-		;
-
-    cout<<"Done collecting results.\n";
-}
-
-/*
-	Partition the graph for parallelized probability propagation. 
-*/
-
-void test_gen_BARON_omp(int goallayers, int subgoals, int rules, int facts){
-	GraphGenerator GG; 
-	size_t size = 0; 
-
-	cout<<"Generating a synthetic AG: layers: "<<goallayers<<", subgoals: "<<subgoals<<", rules: "<<rules<<", facts: "<<facts<<endl; 
-	//int goallayers, int subgoals, int rules, int facts
-	Graph G = GG.treetopology(goallayers,subgoals,rules,facts);
-	G.print(SOL_PATH+"graph.dot");
-
-	std::vector<Graph> X = G.partitiongraph(); 
-
-	cout<<"Number of nodes: "<<G.size()<<endl; 
-	size = X.size(); 
-
-	cout<<"Number of subgraphs: "<<size<<endl; 
-
-
-	std::vector<std::string> names;
-	baron_files(X, names); 
-	baron_interface(names);
-	collectres(size); 
-}
-
-
-
-/*
-Run improvement options in parallel using a combination of openmp and BARON threads. 
-*/
-
-void test_gen_BARON_imp(int goallayers, int subgoals, int rules, int facts, int P){
-	GraphGenerator GG; 
-	cout<<"Generating a synthetic AG: layers: "<<goallayers<<", subgoals: "<<subgoals<<", rules: "<<rules<<", facts: "<<facts<<endl; 
-	//int goallayers, int subgoals, int rules, int facts
-	Graph G = GG.treetopology(goallayers,subgoals,rules,facts);
-	G.print(SOL_PATH+"graph.dot");
-
-	cout<<"Number of nodes: "<<G.size()<<endl; 
-	double improvement = 0.8; 
-	size_t size = 0; 
-
-	/*
-	Loop through all rule nodes. Each rule node (or a subset of rule nodes) is a candidate placement. 
-	Make a separate BARON problem for each rule node and compute the improvement in parallel. 
-	*/
-	std::vector<int> candidate_nodes = G.imp_candidate_nodes();
-	size = candidate_nodes.size(); 
-
-	cout<<"Number of candidate placements: "<<candidate_nodes.size()<<endl; 
-	std::vector<std::string> names;
-
-
-
-	/*
-	This for-loop takes subsets of rule nodes in each iteration (more than one). 
-	*/
-	int i,j=0,k; 
-	int subset_size = candidate_nodes.size() / P; 
-
-	if(size <= P){
-		test_gen_BARON_imp_serial(goallayers,subgoals,rules,facts);
-		return; 
-	}
-
-	cout<<"Placements in each subset: "<<subset_size<<endl;
-
-
-	for (i=0; i<P; ++i){
-		std::vector<int> v;
-		for(k=0; j<size && k < subset_size; ++j, ++k)
-			v.push_back(candidate_nodes[j]); 
-
-		std::string spec = create_baron_file(G, i, v, improvement);
-		std::string name = BARON_RES_PATH + "/program_"+std::to_string(i)+".bar";
-		ofstream programfile; 
-		programfile.open(name);
-		programfile<<spec; 
-		programfile.close();
-		names.push_back(name); 
-	}
-
-	size = P; 
-
-	baron_interface(names); 
-	collectres(size); 
-}
-
-/* 
-Run improvement options serially.  
-*/
-void test_gen_BARON_imp_serial(int goallayers, int subgoals, int rules, int facts){
-	GraphGenerator GG; 
-	cout<<"Generating a synthetic AG: layers: "<<goallayers<<", subgoals: "<<subgoals<<", rules: "<<rules<<", facts: "<<facts<<endl; 
-	//int goallayers, int subgoals, int rules, int facts
-	Graph G = GG.treetopology(goallayers,subgoals,rules,facts);
-	G.print(SOL_PATH+"graph.dot");
-
-	cout<<"Number of nodes: "<<G.size()<<endl; 
-	
-	double improvement = 0.8; 
-	size_t size = 0; 
-
-	/*
-	Loop through all rule nodes. Each rule node is a candidate placement. 
-	Make a separate BARON problem for each rule node and compute the improvement in parallel. 
-	*/
-	std::vector<int> candidate_nodes = G.imp_candidate_nodes();
-	size = candidate_nodes.size(); 
-
-	cout<<"Number of candidate placements: "<<candidate_nodes.size()<<endl; 
-	std::vector<std::string> names;
-	std::vector<int> v;
-	for(int i =0; i<size; ++i){
-		v.push_back(candidate_nodes[i]); 
-	}
-
-	std::string spec = create_baron_file(G, 0, v, improvement);
-	std::string path = BARON_RES_PATH; 
-	std::string name = path+"/program_"+std::to_string(0)+".bar";
-	ofstream programfile; 
-	programfile.open(name);
-	programfile<<spec; 
-	programfile.close();
-
-	baron_interface(G, name); 
-	collectres(1); 
-}
-
-
-
-
 int main(int argc, char**argv){
 	int goallayers, subgoals, rules, facts, choice; 
 
@@ -357,25 +79,20 @@ int main(int argc, char**argv){
 
 	check_sol_dir(); 
 
-	//test_gen(goallayers,subgoals,rules,facts,choice);
+	generate_graph(G, goallayers,subgoals,rules,facts); 
+
 	if (choice == 0){
 		int P = atoi(argv[6]); 
-		test_gen_BARON_imp(goallayers,subgoals,rules,facts,P);
+		test_gen_BARON_imp(G,P);
 	}
 	else if (choice == 1){
-		test_gen_BARON_imp_serial(goallayers,subgoals,rules,facts);
+		test_gen_BARON_imp_serial(G);
 	}
 	else if (choice == 2){
-		test_gen_BARON_omp(goallayers,subgoals,rules,facts); 
+		test_gen_BARON_omp(G); 
 	}
 	else if (choice == 3){
-		test_gen_BARON(goallayers,subgoals,rules,facts); 
+		test_gen_BARON(G); 
 	}
-	/* else if (choice == 2)
-		test_nlopt(goallayers,subgoals,rules,facts,0);
-	else if (choice == 3){
-		graph_generator(G, goallayers, subgoals, rules, facts); 
-		test_gen_KNITRO(G); 
-	}*/
 	return 0;
 }

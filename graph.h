@@ -96,8 +96,11 @@ class GraphGenerator{
 public: 
 	GraphGenerator() {
 	}
-
 	Graph treetopology(int goallayers=1, int subgoals=2, int rules=2, int facts=2);
-
 };
+
+class ImpInstrument {
+	Node improvement; 
+	std::vector<Node> targets;
+}
 
