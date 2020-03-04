@@ -95,8 +95,8 @@ std::string add_improvement_constraints(std::vector<int> rulenodes, int e){
 std::string add_baron_constraints(Graph &G){
 	std::string constraints = "EQUATIONS "; 
 	int n = G.size(); 
-	std::list<Node>::iterator nit = G.graph_nodes(); 
-	std::list<Node>::iterator onit = nit; 
+	std::vector<Node>::iterator nit = G.graph_nodes(); 
+	std::vector<Node>::iterator onit = nit; 
 	std::vector<int> rulenodes;
 	int e =0; 
 	
@@ -135,8 +135,8 @@ std::string add_baron_constraints(Graph &G){
 std::string add_baron_constraints(Graph &G, std::vector<int> candidate_nodes, double improvement){
 	std::string constraints = "EQUATIONS "; 
 	int n = G.size(); 
-	std::list<Node>::iterator nit = G.graph_nodes(); 
-	std::list<Node>::iterator onit = nit; 
+	std::vector<Node>::iterator nit = G.graph_nodes(); 
+	std::vector<Node>::iterator onit = nit; 
 	std::vector<int> rulenodes;
 	int e =0; 
 	
@@ -191,9 +191,9 @@ std::string add_aux_vars(Graph &G, std::vector<std::string> &vars, int nodeid){
 	return aux_declarations;
 }
 
-std::string declare_baron_vars(int n, std::list<Node>::iterator nit, Graph &G){
+std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G){
 	std::string declaration = "VARIABLES "; 
-	std::list<Node>::iterator onit = nit; 
+	std::vector<Node>::iterator onit = nit; 
 	std::vector<std::string> vars;
 	std::string aux_declarations = "VARIABLES "; 
 
@@ -249,11 +249,11 @@ For each rule node, add a new improvement node.
 All added nodes represent a SINGLE improvement option.
 
 */
-std::string declare_baron_vars(int n, std::list<Node>::iterator nit, Graph &G, 
+std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G, 
 	std::vector<int> candidate_nodes, double improvement){
 	
 	std::string declaration = "VARIABLES "; 
-	std::list<Node>::iterator onit = nit; 
+	std::vector<Node>::iterator onit = nit; 
 	std::vector<std::string> vars,tvars;
 	std::string aux_declarations = "VARIABLES "; 
 	std::string imp_declarations = "VARIABLES ";
@@ -347,7 +347,7 @@ std::string options_macos(int index){
 
 std::string create_baron_file(Graph &G, int index){
 	int n = G.size(); 
-	std::list<Node>::iterator nit = G.graph_nodes(); 
+	std::vector<Node>::iterator nit = G.graph_nodes(); 
 	std::string spec = options_macos(index); 
 
 	spec += declare_baron_vars(n, nit, G);
@@ -368,7 +368,7 @@ This will create a BARON file with improvement nodes attached to the candidate_n
 
 std::string create_baron_file(Graph &G, int index, std::vector<int> candidate_nodes, double improvement){
 	int n = G.size(); 
-	std::list<Node>::iterator nit = G.graph_nodes(); 
+	std::vector<Node>::iterator nit = G.graph_nodes(); 
 	std::string spec = options_macos(index); 
 
 	//Pass the candidate nodes to create corresponding improvement nodes. 

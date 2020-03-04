@@ -28,8 +28,8 @@ double fact_constraints(int index, Node v, std::vector<double> &x){
 
 void set_constraints(Graph G, std::vector<double> &x, std::vector<double> &c){
 	int n = G.size(); 
-	std::list<Node>::iterator nit = G.graph_nodes(); 
-	std::list<Node>::iterator onit = nit; 
+	std::vector<Node>::iterator nit = G.graph_nodes(); 
+	std::vector<Node>::iterator onit = nit; 
 
 	for (int i=0; i<n; ++i){
 		int nodetype = nit->nodetype(); 

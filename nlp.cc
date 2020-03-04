@@ -85,7 +85,7 @@ double fact_constraint(const std::vector<double> &x, std::vector<double> &grad, 
 std::vector<double> run_nlp(Graph &G){
 	int n = G.size(); 
 
-	std::list<Node>::iterator nit = G.graph_nodes();
+	std::vector<Node>::iterator nit = G.graph_nodes();
 
 	//LN_COBYLA, LD_SLSQP, LD_MMA
 	nlopt::opt opt(nlopt::LN_COBYLA, n);

@@ -16,40 +16,39 @@ int Graph::addnode(int node_id, NType type, double P){
 	return node_id;
 }
 
-bool Graph::nodeexists(int node_id, std::list<Node>::iterator &it){
-	for (it = this->nodes.begin(); it != this->nodes.end(); ++it){
-			if(it->isnode(node_id))
-				return true; 
-	}
-	return false;  
-}
+// bool Graph::nodeexists(int node_id, std::list<Node>::iterator &it){
+// 	int size = this->node.size(); 
+// 	for(int i = 0; i < size; ++i)
+// 		if(this->nodes[i].isnode(node_id))
+// 			return true; 
+// 	return false;  
+// }
 
 bool Graph::nodeexists(int node_id){
-	std::list<Node>::iterator it;
-	for (it = this->nodes.begin(); it != this->nodes.end(); ++it){
-			if(it->isnode(node_id))
-				return true; 
-	}
+	int size = this->nodes.size(); 
+	for(int i = 0; i < size; ++i)
+		if(this->nodes[i].isnode(node_id))
+			return true; 
 	return false;  
 }
 
 bool Graph::nodeexists(int node_id, Node &N){
-	std::list<Node>::iterator it;
-	for (it = this->nodes.begin(); it != this->nodes.end(); ++it){
-			if(it->isnode(node_id)){
-				N = *it; 
-				return true; 
-			}
-	}
+	int size = this->nodes.size(); 
+	for(int i = 0; i < size; ++i)
+		if(this->nodes[i].isnode(node_id)){
+			N = this->nodes[i]; 
+			return true; 
+		}
 	return false;  
 }
 
 bool Graph::removenode(int node_id) {
-	std::list<Node>::iterator it;
-	if(nodeexists(node_id, it)) {
-		this->nodes.erase(it);
-		return true;  
-	}
+	std::vector<Node>::iterator it;
+	for(it = this->nodes.begin(); it!=this->nodes.end();++it)
+		if(it->isnode(node_id)){
+			this->nodes.erase(it); 
+			return true; 
+		}
 	return false; 
 }
 
@@ -62,27 +61,28 @@ bool Graph::addedge(int from, int to){
 	return true; 
 }
 
-bool Graph::edgeexists(int from,int to,std::list<Edge>::iterator &it){
-	
-	for (it = this->edges.begin(); it != this->edges.end(); ++it){
-			if(it->isedge(from,to))
-				return true; 
-	}
+bool Graph::edgeexists(int from,int to){
+	int size = this->edges.size(); 
+	for(int i = 0; i < size; ++i)
+		if(this->edges[i].isedge(from, to)){
+			return true; 
+		}
 	return false;  
 }
 
 bool Graph::removeedge(int from, int to){
-	std::list<Edge>::iterator it;
-	if(edgeexists(from,to, it)) {
-		this->edges.erase(it); 
-		return true; 
-	}
+	std::vector<Edge>::iterator it;
+	for(it = this->edges.begin(); it!=this->edges.end();++it)
+		if(it->isedge(from, to)){
+			this->edges.erase(it); 
+			return true; 
+		}
 	return false; 
 }
 
 std::list<int> Graph::predecessors(int node_id){
 	std::list<int> P; 
-	std::list<Edge>::iterator it;
+	std::vector<Edge>::iterator it;
 	for (it = this->edges.begin(); it != this->edges.end(); ++it){
 			if(it->inedge(node_id)){
 				P.push_back(it->from_node());
@@ -93,7 +93,7 @@ std::list<int> Graph::predecessors(int node_id){
 
 std::vector<int> Graph::preds(int node_id){
 	std::vector<int> P; 
-	std::list<Edge>::iterator it;
+	std::vector<Edge>::iterator it;
 	for (it = this->edges.begin(); it != this->edges.end(); ++it){
 			if(it->inedge(node_id)){
 				P.push_back(it->from_node());
@@ -109,7 +109,7 @@ std::vector<int> Graph::gnodepreds(int node_id){
 
 std::list<int> Graph::successor(int node_id){
 	std::list<int> P; 
-	std::list<Edge>::iterator it;
+	std::vector<Edge>::iterator it;
 	for (it = this->edges.begin(); it != this->edges.end(); ++it){
 			if(it->outedge(node_id)){
 				P.push_back(it->to_node());
@@ -119,17 +119,15 @@ std::list<int> Graph::successor(int node_id){
 }
 
 void Graph::update_P(std::vector<double> x) {
-	std::list<Node>::iterator it;
-	int i =0; 
-	for (it = this->nodes.begin(); it != this->nodes.end(); ++it){
-		it->updateP(x[i]);
-		++i;  
+	int size = x.size(); 
+	for(int i = 0; i <  size; ++i){
+		this->nodes[i].updateP(x[i]); 
 	}
 }
 
 void Graph::print(std::string filename){
-	std::list<Edge>::iterator it;
-	std::list<Node>::iterator nit;
+	std::vector<Edge>::iterator it;
+	std::vector<Node>::iterator nit;
 	ofstream dotfile; 
 	dotfile.open(filename);
 	dotfile<< "digraph G {\n";
@@ -153,14 +151,14 @@ void Graph::print(std::string filename){
 	dotfile.close();
 }
 
-std::list<Node>::iterator Graph::graph_nodes(){
-	std::list<Node>::iterator nit;
+std::vector<Node>::iterator Graph::graph_nodes(){
+	std::vector<Node>::iterator nit;
 	nit = this->nodes.begin(); 
 	return nit; 
 }
 
-std::list<Edge>::iterator Graph::graph_edges(){
-	std::list<Edge>::iterator eit;
+std::vector<Edge>::iterator Graph::graph_edges(){
+	std::vector<Edge>::iterator eit;
 	eit = this->edges.begin(); 
 	return eit; 
 }
@@ -168,7 +166,7 @@ std::list<Edge>::iterator Graph::graph_edges(){
 
 void Graph::fillprobabilities(){
 	int n = this->size(); 
-	std::list<Node>::iterator nit = this->graph_nodes(); 
+	std::vector<Node>::iterator nit = this->graph_nodes(); 
 	for (int i =0; i<n; i++,++nit){
 		prob.push_back(nit->nodeP()); 
 	}
@@ -176,7 +174,7 @@ void Graph::fillprobabilities(){
 
 void Graph::fillpreds(){
 	int n = this->size(); 
-	std::list<Node>::iterator nit = this->graph_nodes(); 
+	std::vector<Node>::iterator nit = this->graph_nodes(); 
 	for (int i =0; i<n; i++,++nit){
 		std::vector<int> v = preds(nit->nodeid());
 		nit->preds = v; 
@@ -236,7 +234,7 @@ void Graph::addpredecessors(int node_id, int g_node_id, Graph &G){
 
 
 std::vector<Graph> Graph::partitiongraph(){
-	std::list<Node>::iterator it; 
+	std::vector<Node>::iterator it; 
 	std::vector<Graph> X; 
 	for (it = this->nodes.begin(); it != this->nodes.end(); ++it){
 		if(it->nodetype()==Goal) {
@@ -259,7 +257,7 @@ std::vector<Graph> Graph::partitiongraph(){
 
 std::vector<int> Graph::imp_candidate_nodes(){
 	std::vector<int> candidates;
-	std::list<Node>::iterator it; 
+	std::vector<Node>::iterator it; 
 	for (it = this->nodes.begin(); it != this->nodes.end(); ++it){
 		if(it->nodetype()==Rule) {
 			candidates.push_back(it->nodeid()); 

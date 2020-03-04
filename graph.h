@@ -51,8 +51,8 @@ public:
 };
 
 class Graph{
-	std::list<Node> nodes; 
-	std::list<Edge> edges; 
+	std::vector<Node> nodes; 
+	std::vector<Edge> edges; 
 	std::vector<Node> gnodes;
 	std::vector<Node*> nodeindexes;
 
@@ -67,7 +67,7 @@ public:
 	bool nodeexists(int node_id, Node &N);
 	bool removenode(int node_id);
 	bool addedge(int from, int to);
-	bool edgeexists(int from,int to,std::list<Edge>::iterator &it);
+	bool edgeexists(int from,int to);
 	bool removeedge(int from, int to);
 	std::list<int> predecessors(int node_id);
 	std::vector<int> preds(int node_id);
@@ -75,8 +75,8 @@ public:
 	std::list<int> successor(int node_id);
 	void update_P(std::vector<double> x);
 	void print(std::string filename="graph.dot");
-	std::list<Node>::iterator graph_nodes(); 
-	std::list<Edge>::iterator graph_edges();
+	std::vector<Node>::iterator graph_nodes(); 
+	std::vector<Edge>::iterator graph_edges();
 	void fillprobabilities(); 
 	void fillpreds(); 
 	double getnodeprob(int node_id); 
@@ -101,6 +101,13 @@ public:
 
 class ImpInstrument {
 	Node improvement; 
-	std::vector<Node> targets;
-}
+	std::vector<int> targets;
+public:
+	ImpInstrument(double P, std::vector<int> &targets){
+		this->targets = targets; 
+		this->improvement = Node(); 
+	}
+
+	void gettargets(std::vector<int> &targets); 
+}; 
 

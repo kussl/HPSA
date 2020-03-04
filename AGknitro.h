@@ -29,8 +29,8 @@ public:
 					  double* const objGrad, double* const jac) {
 		
 		int n = G.size(); 
-		std::list<Node>::iterator nit = G.graph_nodes(); 
-		std::list<Node>::iterator onit = nit; 
+		std::vector<Node>::iterator nit = G.graph_nodes(); 
+		std::vector<Node>::iterator onit = nit; 
 		for (int i=0; i<n; ++i){
 			if (nit->nodetype()==Fact){
 				c[i] = x[i]; 
@@ -50,8 +50,8 @@ public:
 	int evaluateGA(const double* const x, double* const objGrad, double* const jac) {
 		int i,k; 
 		int n = G.size();
-		std::list<Node>::iterator nit = G.graph_nodes(); 
-		std::list<Node>::iterator onit = nit; 
+		std::vector<Node>::iterator nit = G.graph_nodes(); 
+		std::vector<Node>::iterator onit = nit; 
 
 		objGrad[0] = 1;  
 		for(i=1; i<n; ++i){
@@ -193,8 +193,8 @@ private:
 	void setConstraintProperties_actual(){
 		double default_init = 0.8;   
 		int n = G.size(); 
-		std::list<Node>::iterator nit = G.graph_nodes(); 
-		std::list<Node>::iterator onit = nit; 
+		std::vector<Node>::iterator nit = G.graph_nodes(); 
+		std::vector<Node>::iterator onit = nit; 
 		for (int i=0; i<n; ++i){
 			if (nit->nodetype()==Fact){
 				double P = this->G.getnodeprob(i); 
