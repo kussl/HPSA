@@ -266,6 +266,14 @@ std::vector<int> Graph::imp_candidate_nodes(){
 	return candidates; 
 }
 
+int Graph::count_type(NType type){
+	int size = this->nodes.size(), counter = 0 ; 
+	for(int i = 0; i < size; ++i)
+		if(this->nodes[i].nodetype() == type)
+			++counter; 
+	return counter; 
+}
+
 Graph GraphGenerator::treetopology(int goallayers, int subgoals, int rules, int facts){
 	Graph G; 
 	//Create graph goal 
@@ -294,13 +302,13 @@ Graph GraphGenerator::treetopology(int goallayers, int subgoals, int rules, int 
 				for (int k=0; k<facts; ++k){
 					//P = dist(e2); 
 					if(k%2 == 0)
-						P = 0.95;
+						P = 0.99;
 					else if(k%3 == 0)
-						P = 0.96; 
+						P = 0.98; 
 					else if(k%4 == 0)
-						P = 0.97;
+						P = 1;
 					else 
-						P = 0.98;
+						P = 1;
 					int fact_id = G.addnode(AUTO_ID,Fact,P); 
 					G.addedge(fact_id, rule_id);
 				}

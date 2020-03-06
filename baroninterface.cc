@@ -1,5 +1,4 @@
 #include <iostream>
-#include <iostream>
 #include <fstream>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -37,7 +36,7 @@ void baron_interface(Graph G, int i, bool bg){
 		system(("baron "+name).c_str());
 }
 
-void baron_interface(Graph G, std::string name){
+void baron_interface(std::string name){
 	pid_t pid; 
 	int status;
 
@@ -68,13 +67,12 @@ void baron_files(std::vector<Graph> X, std::vector<std::string> &names){
 void baron_interface(std::vector<std::string> &names){
 
 	pid_t wpid,pid,pids[names.size()]; 
-	int status,i;
-
+	int status,i, size = names.size(); 
 
 	#pragma omp parallel private(i) //num_threads(3)  
 	{
 		#pragma omp for nowait schedule(guided) 
-		for(i=0; i<names.size();++i){
+		for(i=0; i<size;++i){
 			if ((pid = fork()) == 0){
 				int ret = execl(BARON_PATH.c_str(), "baron", 
 					names[i].c_str(), NULL);
@@ -84,9 +82,6 @@ void baron_interface(std::vector<std::string> &names){
 		}
 	}
  
-	cout<<"Parent waiting.\n"; 
-	// for(int i =0; i < X.size(); ++i)
-	//  	waitpid(pids[i], &status, 0);	
 	while ((wpid = wait(&status)) > 0)
 		;
 

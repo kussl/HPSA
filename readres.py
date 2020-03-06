@@ -17,9 +17,18 @@ def readtim(path,i):
 def readres(path,i):
 	f = open(path+"/"+str(i)+".res","r")
 	content = [s for s in f]
-	content = [x for x in content[-1].split(' ') if (x.replace('.','').replace('E-','').strip()).isnumeric() ]
+	obj = [x for x in content[-1].split(' ') if (x.replace('.','').replace('E-','').strip()).isnumeric() ]
+	obj = obj[-1]
+	# for i in range(len(content)): 
+	# 	if content[i].find("The best solution found is") > -1:
+	# 		break 
+	# i+=3
+	# #Read the variables 
+	# for j in range(i, len(content)): 
+	# 	if len(content[j]) == 0: 
+	# 		break 
+		
 
-	obj = content[-1]
 	return round(float(obj), 8)
 
 
@@ -50,9 +59,9 @@ def recallres(size):
 	print("Max objective: ", maxobj)
 
 	#Now purge the files
-	files = [f for f in listdir(path) if f.find(".tim") > -1 or f.find(".res") > -1 or f.find(".opt") > -1 or f.find("program_") > -1 ]
-	for f in files: 
-		os.remove(path+f)
+	# files = [f for f in listdir(path) if f.find(".tim") > -1 or f.find(".res") > -1 or f.find(".opt") > -1 or f.find("program_") > -1 ]
+	# for f in files: 
+	# 	os.remove(path+f)
 
 print("Collecting results..")
 

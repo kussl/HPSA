@@ -20,7 +20,11 @@ class Node{
 			this->type = type; 
 			this->P = 0.8; 
 		}
-		Node (int id,NType type, double P) { 
+		Node (double P){
+			this->type = Fact; 
+			this->P = P; 
+		}
+		Node (int id, NType type, double P) { 
 			this->node_id = id; 
 			this->type = Fact;  
 			this->type = type;
@@ -87,7 +91,7 @@ public:
 	std::vector<Graph> partitiongraph();
 
 	std::vector<int> imp_candidate_nodes(); 
-
+	int count_type(NType type); 
 	int size() { return this->nodes.size(); }
 	int noedges() { return this->edges.size(); }	
 };
@@ -99,15 +103,22 @@ public:
 	Graph treetopology(int goallayers=1, int subgoals=2, int rules=2, int facts=2);
 };
 
-class ImpInstrument {
-	Node improvement; 
-	std::vector<int> targets;
+class Instrument : public Node {
 public:
-	ImpInstrument(double P, std::vector<int> &targets){
-		this->targets = targets; 
-		this->improvement = Node(); 
+	std::vector<int> targets;
+	Instrument (double P, std::vector<int> targets) 
+		: Node(P) { 
+		for(int i = 0; i < targets.size(); ++i)
+			this->targets.push_back(targets[i]); 
 	}
-
-	void gettargets(std::vector<int> &targets); 
+	Instrument (double P) 
+		: Node(P) { 
+	}
+	void set_targets(std::vector<int> targets){
+		for(int i = 0; i < targets.size(); ++i)
+			this->targets.push_back(targets[i]); 
+	}
+	void get_targets(std::vector<int> &targets){
+		targets = this->targets; 
+	}
 }; 
-

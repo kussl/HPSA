@@ -1,5 +1,4 @@
 #include <iostream>
-#include <iostream>
 #include <fstream>
 #include <unistd.h>
 
@@ -17,10 +16,11 @@ using namespace std;
 
 
 extern void baron_interface(std::vector<std::string> &names); 
-extern void baron_interface(Graph G, std::string name); 
+extern void baron_interface(std::string name); 
 extern void baron_interface(Graph G, int i, bool bg); 
 extern std::string create_baron_file(Graph &G, int i); 
-extern std::string create_baron_file(Graph &G, int index, std::vector<int> candidate_nodes, double improvement); 
+extern std::string create_baron_file(Graph &G, int index, std::vector<int> candidate_nodes, double improvement, int m); 
+extern std::string create_baron_file(Graph &G, int index, std::vector<Instrument> v, int m); 
 extern void baron_files(std::vector<Graph> X, std::vector<std::string> &names); 
 void collectres(size_t size); 
 void test_gen_BARON_imp_serial(Graph G); 
@@ -63,7 +63,7 @@ void test_gen_BARON_imp(Graph G, int P){
 		for(k=0; j<size && k < subset_size; ++j, ++k)
 			v.push_back(candidate_nodes[j]); 
 
-		std::string spec = create_baron_file(G, i, v, improvement);
+		std::string spec = create_baron_file(G, i, v, improvement, 1);
 		std::string name = BARON_RES_PATH + "/program_"+std::to_string(i)+".bar";
 		ofstream programfile; 
 		programfile.open(name);
@@ -101,7 +101,7 @@ void test_gen_BARON_imp_serial(Graph G){
 		v.push_back(candidate_nodes[i]); 
 	}
 
-	std::string spec = create_baron_file(G, 0, v, improvement);
+	std::string spec = create_baron_file(G, 0, v, improvement, 1);
 	std::string path = BARON_RES_PATH; 
 	std::string name = path+"/program_"+std::to_string(0)+".bar";
 	ofstream programfile; 
@@ -109,7 +109,7 @@ void test_gen_BARON_imp_serial(Graph G){
 	programfile<<spec; 
 	programfile.close();
 
-	baron_interface(G, name); 
+	baron_interface(name); 
 	collectres(1); 
 }
 
@@ -151,16 +151,104 @@ void test_gen_BARON_omp(Graph G){
 	collectres(size); 
 }
 
+
+
+/*
+For each of the k instruments, create a target set
+by going through the rule nodes sequentially, dividing 
+them into k subsets. 
+*/
+void create_targets(Graph G, std::vector<Instrument> &v, int k){
+	std::vector<int> rule_nodes = G.imp_candidate_nodes();
+	int no_rule_nodes = rule_nodes.size();
+	int nodes_per_inst = no_rule_nodes / k;  
+	double P = 1.0; 
+	int i = 0; 
+	for(int j = 0; j < k; ++j){
+		std::vector<int> targets;
+		Instrument t = Instrument(P*=.9); 
+		
+		for(int s = 0; i < no_rule_nodes && s < nodes_per_inst; ++i, ++s){
+			targets.push_back(rule_nodes[i]); 
+		}
+		t.set_targets(targets); 
+		v.push_back(t); 
+	}
+}
+
+void multiple_improvements_case2_sequential(Graph G, int m, int k ){
+	std::vector<Instrument> v; 
+	create_targets(G, v, k); 
+
+	std::string spec = create_baron_file(G, 0, v, m);
+	std::string path = BARON_RES_PATH; 
+	std::string name = path+"/program_"+std::to_string(0)+".bar";
+	ofstream programfile; 
+	programfile.open(name);
+	programfile<<spec; 
+	programfile.close();
+
+	baron_interface(name); 
+	collectres(1); 
+}
+
+void multiple_improvements_case2_parallel(Graph G, int m, int k ){
+	std::vector<Instrument> v; 
+	std::vector<std::string> names;
+	create_targets(G, v, k); 
+
+	/* 
+	For each instrument, create a separate optimization problem
+	to be solved in parallel. 
+	*/
+	m /= k; 
+	cout<<"Sub-m: "<<m<<endl; 
+
+	for(int i = 0; i < k; ++i){
+		std::vector<Instrument> v_single;
+		v_single.push_back(v[i]); 
+		std::string spec = create_baron_file(G, i, v_single, m);
+		std::string path = BARON_RES_PATH; 
+		std::string name = path+"/program_"+std::to_string(i)+".bar";
+		ofstream programfile; 
+		programfile.open(name);
+		programfile<<spec; 
+		programfile.close();
+		names.push_back(name); 
+	}
+	
+	baron_interface(names); 
+	collectres(k); 
+}
+
 /*
 Multiple improvements test:
 This function receives a graph G and a vector of improvement instruments.
 Each improvement instrument is represented by a vector of nodes and 
 a probability value. The vector of nodes are the improvement target
 rule nodes of the given improvement instrument. 
+m: number of acceptable placements 
+k: number of available instruments (v.size())
+Two cases are considered: 
+case 1: 1 < m < k 
+case 2: m >= k 
+Each one is tested both sequential and parallel. 
 */
 
-void test_BARON_multiple_improvements(Graph G) {
+void test_BARON_multiple_improvements(Graph G, int m, int k, bool parallel) {
+	cout<<"Graph nodes: "<<G.size()<<", k: "<<k<<", m: "<<m<<endl; 
 
+	if( m >= k ){
+		if(parallel){
+			multiple_improvements_case2_parallel(G, m, k); 
+		}
+		else { 
+			multiple_improvements_case2_sequential(G, m, k); 
+		}
+	}
+	else { 
+
+	}
 }
 
 
