@@ -19,16 +19,6 @@ def readres(path,i):
 	content = [s for s in f]
 	obj = [x for x in content[-1].split(' ') if (x.replace('.','').replace('E-','').strip()).isnumeric() ]
 	obj = obj[-1]
-	# for i in range(len(content)): 
-	# 	if content[i].find("The best solution found is") > -1:
-	# 		break 
-	# i+=3
-	# #Read the variables 
-	# for j in range(i, len(content)): 
-	# 	if len(content[j]) == 0: 
-	# 		break 
-		
-
 	return round(float(obj), 8)
 
 
@@ -39,13 +29,15 @@ def recallres(size):
 	f = open(fname,"w")
 	writer = csv.writer(f) 
 	data = [] 
-	for i in range(size): 
+	filenames = os.listdir(path) 
+	filenames = [f.split('.')[0] for f in filenames if f.find('.tim') > -1]
+	for i in range(len(filenames)): 
 		rec = [] 
-		t = readtim(path,i)
+		t = readtim(path,filenames[i])
 		if not t: 
 			os.remove(fname)
 			return None 
-		r = readres(path,i)
+		r = readres(path,filenames[i])
 		rec.append([i,t,r])
 		data.append([i,t,r])
 		writer.writerow(rec) 
@@ -54,14 +46,18 @@ def recallres(size):
 	print("Time: ", end=" ")
 	maxtime = max(data, key=lambda x: x[1])[1]
 	mintime = min(data, key=lambda x: x[1])[1]
+	avgtime = (maxtime+mintime)/2
 	maxobj = max(data, key=lambda x:x[2])[2]
-	print("Max:", maxtime, "Min:", mintime, "Avg:", (maxtime+mintime)/2)
-	print("Max objective: ", maxobj)
+	minobj = min(data, key=lambda x:x[2])[2]
+	avgobj = (maxobj+minobj)/2
+	print("Max:", maxtime, "Min:", mintime, "Avg:", avgtime)
+	print("Obj: ", end=" ")
+	print("Max:", maxobj, "Min:",minobj, "Avg:",avgobj)
 
 	#Now purge the files
-	# files = [f for f in listdir(path) if f.find(".tim") > -1 or f.find(".res") > -1 or f.find(".opt") > -1 or f.find("program_") > -1 ]
-	# for f in files: 
-	# 	os.remove(path+f)
+	files = [f for f in listdir(path) if f.find(".tim") > -1 or f.find(".res") > -1 or f.find(".opt") > -1 or f.find("program_") > -1 ]
+	for f in files: 
+		os.remove(path+f)
 
 print("Collecting results..")
 

@@ -69,7 +69,7 @@ void baron_interface(std::vector<std::string> &names){
 	pid_t wpid,pid,pids[names.size()]; 
 	int status,i, size = names.size(); 
 
-	#pragma omp parallel private(i) //num_threads(3)  
+	#pragma omp parallel private(i) num_threads(3)  
 	{
 		#pragma omp for nowait schedule(guided) 
 		for(i=0; i<size;++i){

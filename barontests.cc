@@ -1,7 +1,8 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
-
+#include <sys/wait.h>
+#include <cmath>
 #ifndef AG_GRAPH_HEADER
 #define AG_GRAPH_HEADER 1 
 #include "graph.h"
@@ -204,9 +205,19 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k ){
 	m /= k; 
 	cout<<"Sub-m: "<<m<<endl; 
 
-	for(int i = 0; i < k; ++i){
+	/*
+	Create a program for every 4 instruments.
+	*/
+	int splits = 1; 
+	if(k > 4){
+		splits = 4;  
+	}
+
+	for(int i = 0; i < k; i+=splits){
 		std::vector<Instrument> v_single;
-		v_single.push_back(v[i]); 
+		for(int j = 0; j < splits; ++j){
+			v_single.push_back(v[i+j]); 
+		}
 		std::string spec = create_baron_file(G, i, v_single, m);
 		std::string path = BARON_RES_PATH; 
 		std::string name = path+"/program_"+std::to_string(i)+".bar";
@@ -218,7 +229,7 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k ){
 	}
 	
 	baron_interface(names); 
-	collectres(k); 
+	collectres(ceil(k/(double)splits)); 
 }
 
 /*
