@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <thread>
 
 #include "omp.h"
 
@@ -69,7 +70,10 @@ void baron_interface(std::vector<std::string> &names){
 	pid_t wpid,pid,pids[names.size()]; 
 	int status,i, size = names.size(); 
 
-	#pragma omp parallel private(i) num_threads(3)  
+	unsigned no_threads = std::thread::hardware_concurrency();
+	cout<<"No threads available: "<<no_threads<<endl; 
+
+	#pragma omp parallel private(i) num_threads(no_threads/3)  
 	{
 		#pragma omp for nowait schedule(guided) 
 		for(i=0; i<size;++i){
