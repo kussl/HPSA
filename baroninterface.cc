@@ -73,7 +73,7 @@ void baron_interface(std::vector<std::string> &names){
 	unsigned no_threads = std::thread::hardware_concurrency();
 	cout<<"No threads available: "<<no_threads<<endl; 
 
-	#pragma omp parallel private(i) num_threads(no_threads/3)  
+	#pragma omp parallel private(i) num_threads(no_threads/4)  
 	{
 		#pragma omp for nowait schedule(guided) 
 		for(i=0; i<size;++i){

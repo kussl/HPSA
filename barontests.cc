@@ -209,8 +209,14 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k ){
 	Create a program for every 4 instruments.
 	*/
 	int splits = 1; 
-	if(k > 4){
-		splits = 4;  
+	if(k > 4 && k < 40){
+		splits = 8;  
+	}
+	else if(k < 200) { 
+		splits = 16; 
+	}
+	else {
+		splits = 32; 
 	}
 
 	for(int i = 0; i < k; i+=splits){

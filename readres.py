@@ -18,9 +18,11 @@ def readres(path,i):
 	f = open(path+"/"+str(i)+".res","r")
 	content = [s for s in f]
 	obj = [x for x in content[-1].split(' ') if (x.replace('.','').replace('E-','').strip()).isnumeric() ]
-	obj = obj[-1]
-	return round(float(obj), 8)
-
+	if obj:
+		obj = obj[-1]
+		return round(float(obj), 8)
+	else:
+		return 0.0
 
 def recallres(size):
 	ts = datetime.datetime.now() 
