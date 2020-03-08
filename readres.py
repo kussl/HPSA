@@ -33,15 +33,17 @@ def recallres(size):
 	data = [] 
 	filenames = os.listdir(path) 
 	filenames = [f.split('.')[0] for f in filenames if f.find('.tim') > -1]
+
 	for i in range(len(filenames)): 
 		rec = [] 
 		t = readtim(path,filenames[i])
-		if not t: 
+		if t is None: 
 			os.remove(fname)
 			return None 
 		r = readres(path,filenames[i])
 		rec.append([i,t,r])
 		data.append([i,t,r])
+
 		writer.writerow(rec) 
 
 	f.close()

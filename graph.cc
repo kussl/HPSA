@@ -125,6 +125,10 @@ void Graph::update_P(std::vector<double> x) {
 	}
 }
 
+void Graph::update_P(int index, double P) {
+	this->nodes[index].updateP(P); 
+}
+
 void Graph::print(std::string filename){
 	std::vector<Edge>::iterator it;
 	std::vector<Node>::iterator nit;
@@ -156,6 +160,7 @@ std::vector<Node>::iterator Graph::graph_nodes(){
 	nit = this->nodes.begin(); 
 	return nit; 
 }
+
 
 std::vector<Edge>::iterator Graph::graph_edges(){
 	std::vector<Edge>::iterator eit;
@@ -226,7 +231,7 @@ void Graph::addpredecessors(int node_id, int g_node_id, Graph &G){
 	for(pit = pred.begin(); pit != pred.end(); ++pit){
 		Node N; 
 		nodeexists(*pit, N); 
-		int new_node_id = G.addnode(AUTO_ID, N.nodetype(), N.nodeP()); 
+		int new_node_id = G.addnode(N.nodeid(), N.nodetype(), N.nodeP()); 
 		G.addedge(new_node_id,g_node_id);
 		addpredecessors(N.nodeid(), new_node_id, G); 
 	}
@@ -236,19 +241,19 @@ void Graph::addpredecessors(int node_id, int g_node_id, Graph &G){
 std::vector<Graph> Graph::partitiongraph(){
 	std::vector<Node>::iterator it; 
 	std::vector<Graph> X; 
+
 	for (it = this->nodes.begin(); it != this->nodes.end(); ++it){
 		if(it->nodetype()==Goal) {
 			//is this the leaf? 
-			if(it->nodeid() == 0)
+			if(it->nodeid() == 0){
 				continue;
+			}
 			std::list<int> pred = predecessors(it->nodeid());  
 			//Otherwise, make a graph for it. 
-			//cout<<"Working on"<<it->nodeid()<<endl; 
 			Graph G; 
-			int node_id = G.addnode(AUTO_ID, Goal, 0); 
+			int node_id = G.addnode(it->nodeid(), Goal, 0); 
 			//Add all predecessor nodes and edges. 
 			addpredecessors(it->nodeid(), node_id, G); 
-			//cout<<endl; 
 			X.push_back(G); 
 		}
 	}

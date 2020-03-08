@@ -62,31 +62,6 @@ void check_sol_dir(){
 	}
 }
 
-// void readimpconfig(std::vector<Instrument> v){
-// 	std::string name = "imp.config", line; 
-// 	ofstream configfile; 
-// 	int m, k; 
-// 	configfile.open(name);
-// 	getline (configfile,line); 
-// 	m = std::stoi(line); 
-// 	getline (configfile,line); 
-// 	k = std::stoi(line); 
-
-// 	for(int i = 0; i < k; ++i){
-// 		std::vector<int> targets;
-// 		double P; 
-// 		//Read the probability first
-// 		getline (configfile,line, ','); 
-// 		P = std::stof(line); 
-// 		//Then read the targets
-// 		while (getline (configfile,line, ',')) {
-// 			targets.push_back(std::stoi(line)); 
-// 		}
-// 		Instrument s = Instrument (0, Fact, P, targets); 
-// 		v.push_back(s); 
-// 	}
-// 	configfile.close();
-// }
 
 
 int main(int argc, char**argv){

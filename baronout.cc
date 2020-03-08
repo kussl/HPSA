@@ -138,7 +138,7 @@ std::string add_baron_constraints(Graph &G){
 	for(int i =0; i<n; ++i){
 		constraints+= "e"+std::to_string(i);
 		if (onit->nodetype()==Goal){
-			constraints+= ",e"+std::to_string(i)+"g";
+			//constraints+= ",e"+std::to_string(i)+"g";
 		}
 		constraints+= ",";
 		++onit; 
@@ -417,6 +417,7 @@ std::string options_macos(int index){
 
 std::string create_baron_file(Graph &G, int index){
 	int n = G.size(); 
+	std::string leafnode = std::to_string(G.graph_nodes()[0].nodeid()); 
 	std::vector<Node>::iterator nit = G.graph_nodes(); 
 	std::string spec = options_macos(index); 
 
@@ -424,7 +425,7 @@ std::string create_baron_file(Graph &G, int index){
 	spec+="\n";
 	spec+= add_baron_constraints(G); 
 	spec+="\n";
-	spec+="OBJ: minimize x0;";
+	spec+="OBJ: minimize x"+leafnode+";";
 
 	return spec; 
 }
@@ -437,7 +438,8 @@ This will create a BARON file with improvement nodes attached to the candidate_n
 */
 
 std::string create_baron_file(Graph &G, int index, std::vector<int> candidate_nodes, double improvement, int m){
-	int n = G.size(); 
+	int n = G.size();
+	std::string leafnode = std::to_string(G.graph_nodes()[0].nodeid());  
 	std::vector<Node>::iterator nit = G.graph_nodes(); 
 	std::string spec = options_macos(index); 
 	std::vector<Instrument> v; 
@@ -450,7 +452,7 @@ std::string create_baron_file(Graph &G, int index, std::vector<int> candidate_no
 	spec+="\n";
 	spec+= add_baron_constraints(G, v, m); 
 	spec+="\n";
-	spec+="OBJ: minimize x0;";
+	spec+="OBJ: minimize x"+leafnode+";";
 
 	return spec; 
 }
@@ -461,6 +463,7 @@ This function is used to supply multiple improvement instruments to BARON.
 
 std::string create_baron_file(Graph &G, int index, std::vector<Instrument> v, int m){
 	int n = G.size(); 
+	std::string leafnode = std::to_string(G.graph_nodes()[0].nodeid()); 
 	std::vector<Node>::iterator nit = G.graph_nodes(); 
 	std::string spec = options_macos(index); 
 
@@ -469,7 +472,7 @@ std::string create_baron_file(Graph &G, int index, std::vector<Instrument> v, in
 	spec+="\n";
 	spec+= add_baron_constraints(G, v, m); 
 	spec+="\n";
-	spec+="OBJ: minimize x0;";
+	spec+="OBJ: minimize x"+leafnode+";";
 
 	return spec; 
 }

@@ -36,8 +36,9 @@ class Node{
 		NType nodetype(){ return this->type; }
 		double nodeP() { return this->P; }
 		void updateP(double P) { this->P = P; }
-		
 };
+
+
 
 class Edge{
 	int from; 
@@ -78,6 +79,7 @@ public:
 	std::vector<int> gnodepreds(int node_id);
 	std::list<int> successor(int node_id);
 	void update_P(std::vector<double> x);
+	void update_P(int index, double P);
 	void print(std::string filename="graph.dot");
 	std::vector<Node>::iterator graph_nodes(); 
 	std::vector<Edge>::iterator graph_edges();

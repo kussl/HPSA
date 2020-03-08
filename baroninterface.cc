@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <thread>
+#include <sstream>
 
 #include "omp.h"
 
@@ -90,4 +91,47 @@ void baron_interface(std::vector<std::string> &names){
 		;
 
     cout<<"Computation done in parallel.\n";
+}
+
+void readsolution(std::vector<Graph> &X){
+	std::string line; 
+	ifstream file; 
+	int no_files = X.size(); 
+	for(int i = 0; i < no_files; ++i){
+		std::string name = BARON_RES_PATH+"/"+std::to_string(i)+".res";
+		file.open(name);
+		while ( getline(file, line) ){
+			if(line.find("The best solution found is")!= string::npos){
+				getline(file, line); 
+				getline(file, line); 
+				break; 
+			}
+		} 
+		//Now collect the results and record them in the graph.
+		int j = 0; 
+		int g_size = X[i].size(); 
+		while( getline(file, line, ' ')){
+			//std::istringstream iss (line);
+
+			if(line.find("x")!=string::npos){
+				char *dup = strdup(line.c_str());
+				char *token = strtok(dup, "			");
+				token++; 
+				int index = atoi(token); 
+				
+				//cout<<index<<" "; 
+				token = strtok(NULL, "			");
+				token = strtok(NULL, "			");
+				double P = atof(token); 
+				//cout<<P<<endl; 
+				free(dup);
+				X[i].update_P(j,P);
+				//cout<<X[i].graph_nodes()[j].nodeid()<<" set to "<<P<<endl; 
+				++j;  
+			}
+			if(j == (g_size-1))
+				break; 
+		}
+		file.close(); 
+	}
 }

@@ -25,6 +25,7 @@ extern std::string create_baron_file(Graph &G, int index, std::vector<Instrument
 extern void baron_files(std::vector<Graph> X, std::vector<std::string> &names); 
 void collectres(size_t size); 
 void test_gen_BARON_imp_serial(Graph G); 
+void readsolution(std::vector<Graph> &X); 
 
 /*
 Run improvement options in parallel using a combination of OpenMP and BARON threads. 
@@ -134,8 +135,40 @@ void test_gen_BARON(Graph G){
 }
 
 /*
-	Partition the graph for parallelized probability propagation. 
+	1. Partition the graph. 
+	2. Compute expected success for each subtree in parallel. 
+	3. Form a final graph F using the subtree goal nodes. 
+	4. Compute the final expected success on F. 
 */
+
+Graph combine_subtrees(Graph G, std::vector<Graph> X){
+	Graph AG;
+	//iterator for X:
+	int k = 0; 
+
+	//Add the leaf node 
+	int leaf_id = AG.addnode(AUTO_ID, Goal, 0); 
+	//Its predecessors come from G 
+	std::vector<int> pred = G.preds(0);
+	int no_preds = pred.size(); 
+	for(int i = 0; i < no_preds; ++i){
+		AG.addnode(pred[i], Rule, 0); 
+		AG.addedge(pred[i], leaf_id);	
+		/*
+		Add the leaf nodes in the subtrees of X as
+		predecessors of the rule nodes in AG. 
+		*/ 
+		std::vector<int> rule_pred = G.preds(pred[i]); 
+		int no_rule_preds = rule_pred.size(); 
+		for(int j = 0; j<no_rule_preds; ++j){
+			Node n = X[k].graph_nodes()[0];
+			++k; 
+			AG.addnode(n.nodeid(), Fact, n.nodeP()); 
+			AG.addedge(rule_pred[j], pred[i]);  
+		}
+	}
+	return AG; 
+}
 
 void test_gen_BARON_omp(Graph G){
 	size_t size = 0; 
@@ -149,7 +182,12 @@ void test_gen_BARON_omp(Graph G){
 	std::vector<std::string> names;
 	baron_files(X, names); 
 	baron_interface(names);
+	readsolution(X);
+	Graph AG = combine_subtrees(G,X); 
+	cout<<"Final solution: "<<endl; 
 	collectres(size); 
+
+	test_gen_BARON(AG); 
 }
 
 
