@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <cmath>
+#include <ctime>
+
 #ifndef AG_GRAPH_HEADER
 #define AG_GRAPH_HEADER 1 
 #include "graph.h"
@@ -182,10 +184,15 @@ void test_gen_BARON_omp(Graph G){
 	std::vector<std::string> names;
 	baron_files(X, names); 
 	baron_interface(names);
+	//Record the time for the extra effort. 
+	const clock_t begin_time = clock();
+
 	readsolution(X);
 	Graph AG = combine_subtrees(G,X); 
 	cout<<"Final solution: "<<endl; 
 	collectres(size); 
+
+	std::cout << "Time (s) spent for preparation: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
 
 	test_gen_BARON(AG); 
 }
