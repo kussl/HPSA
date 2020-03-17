@@ -79,7 +79,7 @@ void test_gen_BARON_imp(Graph G, int P){
 
 	size = P; 
 
-	baron_interface(names); 
+	baron_interface(names, P); 
 	collectres(size); 
 }
 
@@ -173,7 +173,7 @@ Graph combine_subtrees(Graph G, std::vector<Graph> X){
 	return AG; 
 }
 
-void test_gen_BARON_omp(Graph G){
+void test_gen_BARON_omp(Graph G, int P){
 	size_t size = 0; 
 	std::vector<Graph> X = G.partitiongraph(); 
 
@@ -184,7 +184,7 @@ void test_gen_BARON_omp(Graph G){
 
 	std::vector<std::string> names;
 	baron_files(X, names); 
-	baron_interface(names);
+	baron_interface(names, P);
 	//Record the time for the extra effort. 
 	const clock_t begin_time = clock();
 
@@ -365,6 +365,8 @@ void multiple_improvements_case2_parallel2(Graph G, int P){
 	std::cout << "Time (s) spent for preparation: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
 
 	test_gen_BARON_imp_serial(AG); 
+
+	
 }
 
 
