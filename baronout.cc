@@ -58,7 +58,7 @@ std::string rule_constraints(Graph &G, Node n, int e, std::vector<Instrument> v,
 	}
 	constraints.replace(constraints.length()-1,1," == 0;\n");
 	constraints+=binary_constraints;
-	
+
 	return constraints; 
 }
 
@@ -126,6 +126,7 @@ std::string add_improvement_constraints(std::vector<std::string> rulenodes, int 
 		total = std::to_string(rulenodes.size()-1); 
 	else 
 		total = std::to_string(m); 
+
 
 	constraints.replace(constraints.length()-1,1," == "+total+";\n");
 	return constraints; 
@@ -213,9 +214,12 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 			//Only add an improvement constraint if the node is in the candidates vector. 
 			int inst_size = v.size();
 			bool found = false; 
-			constraints += rule_constraints(G, *nit, e, v, tnodes, found);  
 			
-			if (!found)  { 
+			std::string c = rule_constraints(G, *nit, e, v, tnodes, found);  
+			if(found){
+				constraints += c; 
+			}
+			else  { 
 				constraints += rule_constraints(G, *nit, e); 
 			}
 			rulenodes.push_back(nit->nodeid()); 
@@ -409,10 +413,10 @@ std::string options_macos(int index){
 	spec += "PrLevel: 0; \n";
 	spec += "LocRes: 0; \n"; 
 	spec += "DoLocal: 1;\n";
-	spec += "FirstLoc: 1;\n";
+	//spec += "FirstLoc: 1;\n";
 	spec += "LPSol: 8;\n";
 	//spec += "MaxTime: 4;\n";
-	spec += "MaxIter: 0;\n"; 
+	spec += "MaxIter: 50;\n"; 
 	spec += "CplexLibName: \"/Applications/CPLEX_Studio1210/cplex/bin/x86-64_osx/libcplex12100.dylib\";";
 	spec += "}\n";
 	return spec; 
@@ -469,6 +473,7 @@ std::string create_baron_file(Graph &G, int index, std::vector<Instrument> v, in
 	std::string leafnode = std::to_string(G.graph_nodes()[0].nodeid()); 
 	std::vector<Node>::iterator nit = G.graph_nodes(); 
 	std::string spec = options_macos(index); 
+
 
 	//Pass the candidate nodes to create corresponding improvement nodes. 
 	spec += declare_baron_vars(n, nit, G, v);

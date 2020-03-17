@@ -296,18 +296,13 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k, int P){
 	cout<<"Sub-m: "<<m<<endl; 
 
 	/*
-	Create a program for every 4 instruments.
+	Create a program for every log_2(k) improvements.
 	*/
-	int splits = 1; 
-	if(k > 4 && k < 40){
-		splits = 8;  
-	}
-	else if(k < 200) { 
-		splits = 16; 
-	}
-	else {
-		splits = 32; 
-	}
+	int splits = floor(log2(k)); 
+	
+
+
+	cout<<"Splits: "<<splits<<endl;
 
 	for(int i = 0; i < k; i+=splits){
 		std::vector<Instrument> v_single;
@@ -319,18 +314,27 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k, int P){
 	}
 	
 	baron_interface(names, P); 
-	collectres(ceil(k/(double)splits)); 
+	collectres(splits); 
 }
 
-void multiple_improvements_case2_parallel2(Graph G, int m, int k, int P){
+void multiple_improvements_case2_parallel2(Graph G, int P){
 	std::vector<std::string> names;
 	unsigned no_threads = std::thread::hardware_concurrency();
 	int p = no_threads/4; 
-	const clock_t begin_time = clock();
+	//const clock_t begin_time = clock();
 	std::vector<Graph> X = G.partitiongraph(); 
 
+	int m = G.count_type(Rule) / 3; 
+	int k;
+	k = floor(log2(m)); 
+	if (k < 1)
+		k = 1; 
+
 	int splits = X.size(); 
-	cout<<"Number of subin-trees:"<<splits<<endl;
+	cout<<"Number of subin-trees: "<<splits<<endl;
+
+	m = ceil(m/splits);
+	cout<<"For each subin-tree, m: "<<m<<endl;
 
 	for(int i = 0; i < splits; ++i){
 		X[i].print();
@@ -348,17 +352,27 @@ void multiple_improvements_case2_parallel2(Graph G, int m, int k, int P){
 		names.push_back(name); 
 	}
 
-	std::cout << "Time (s) spent for preparation: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
-
 
 	baron_interface(names, P); 
+	
+	const clock_t begin_time = clock();
+
+	readsolution(X);
+	Graph AG = combine_subtrees(G,X); 
+	cout<<"Final solution: "<<endl; 
 	collectres(splits); 
+
+	std::cout << "Time (s) spent for preparation: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
+
+	test_gen_BARON_imp_serial(AG); 
 }
 
 void test_BARON_multiple_improvements(Graph G, short parallel, int P) {
 	int m = G.count_type(Rule) / 3; 
 	int k;
 	k = floor(log2(m)); 
+	if (k < 1)
+		k = 1; 
 
 	cout<<"Graph nodes: "<<G.size()<<", k: "<<k<<", m: "<<m<<endl; 
 
@@ -370,7 +384,7 @@ void test_BARON_multiple_improvements(Graph G, short parallel, int P) {
 			multiple_improvements_case2_parallel(G, m, k, P); 
 		}
 		else if(parallel==2){
-			multiple_improvements_case2_parallel2(G, m, k, P); 
+			multiple_improvements_case2_parallel2(G, P); 
 		}
 	}
 }
