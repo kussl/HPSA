@@ -416,7 +416,7 @@ std::string options_macos(int index){
 	//spec += "FirstLoc: 1;\n";
 	spec += "LPSol: 8;\n";
 	//spec += "MaxTime: 4;\n";
-	spec += "MaxIter: 50;\n"; 
+	//spec += "MaxIter: 50;\n"; 
 	spec += "CplexLibName: \"/Applications/CPLEX_Studio1210/cplex/bin/x86-64_osx/libcplex12100.dylib\";";
 	spec += "}\n";
 	return spec; 
