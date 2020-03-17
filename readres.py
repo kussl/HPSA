@@ -48,13 +48,15 @@ def recallres(size):
 
 	f.close()
 	print("Time: ", end=" ")
-	maxtime = max(data, key=lambda x: x[1])[1]
-	mintime = min(data, key=lambda x: x[1])[1]
-	avgtime = (maxtime+mintime)/2
+	t = [x[1] for x in data]
+	maxtime = max(t) #max(data, key=lambda x: x[1])[1]
+	mintime = min(t) #min(data, key=lambda x: x[1])[1]
+	avgtime = stats.mean(t) #(maxtime+mintime)/2
+	totaltime = sum(t)
 	maxobj = max(data, key=lambda x:x[2])[2]
 	minobj = min(data, key=lambda x:x[2])[2]
 	avgobj = (maxobj+minobj)/2
-	print("Max:", maxtime, "Min:", mintime, "Avg:", avgtime)
+	print("Max:", maxtime, "Min:", mintime, "Avg:", avgtime, "Total:", totaltime)
 	print("Obj: ", end=" ")
 	print("Max:", maxobj, "Min:",minobj, "Avg:",avgobj)
 

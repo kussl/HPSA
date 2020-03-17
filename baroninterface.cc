@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <thread>
 #include <cstring>
+#include <ctime>
 
 #include "omp.h"
 
@@ -80,7 +81,9 @@ void baron_interface(std::vector<std::string> &names, int num_threads=0){
 		cout<<"Number of threads set to: "<<num_threads<<endl; 
 	}
 
-	#pragma omp parallel private(i) num_threads(num_threads/4)  
+	const clock_t begin_time = clock();
+
+	#pragma omp parallel private(i) num_threads(num_threads)  
 	{
 		#pragma omp for nowait schedule(guided) 
 		for(i=0; i<size;++i){
@@ -97,6 +100,8 @@ void baron_interface(std::vector<std::string> &names, int num_threads=0){
 		;
 
     cout<<"Computation done in parallel.\n";
+    std::cout << float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
+
 }
 
 /*

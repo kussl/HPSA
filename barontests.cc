@@ -367,6 +367,7 @@ void multiple_improvements_case2_parallel2(Graph G, int P){
 	test_gen_BARON_imp_serial(AG); 
 }
 
+
 void test_BARON_multiple_improvements(Graph G, short parallel, int P) {
 	int m = G.count_type(Rule) / 3; 
 	int k;
