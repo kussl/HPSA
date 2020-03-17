@@ -33,7 +33,7 @@ For now, last argument plays no role.
 */
 
 std::string rule_constraints(Graph &G, Node n, int e, std::vector<Instrument> v, std::vector<std::string> &tnodes, bool &found){
-	std::string constraints; 
+	std::string constraints, binary_constraints; 
 
 	constraints="e"+std::to_string(e)+": -x"+std::to_string(n.nodeid())+"+";
 
@@ -51,18 +51,14 @@ std::string rule_constraints(Graph &G, Node n, int e, std::vector<Instrument> v,
 		std::string tid = std::to_string(n.nodeid())+"_"+std::to_string(k); 
 		if(std::find(v[k].targets.begin(), v[k].targets.end(), n.nodeid()) != v[k].targets.end()){
 			constraints+= "((1-t"+tid+")+t"+tid+"*(1-"+std::to_string(v[k].nodeP())+"))*"; 
+			binary_constraints+= "e_t"+tid+": t"+tid+" - t"+tid+"^2 == 0;\n";
 			found = true; 
 			tnodes.push_back(tid); 
 		}
 	}
 	constraints.replace(constraints.length()-1,1," == 0;\n");
-	for(int k = 0; k < inst_size; ++k){
-		std::string tid = std::to_string(n.nodeid())+"_"+std::to_string(k); 
-		constraints+= "e_t"+tid+": t"+tid+" - t"+tid+"^2 == 0;\n";
-	}
+	constraints+=binary_constraints;
 	
-	
-	constraints+="\n";
 	return constraints; 
 }
 

@@ -235,12 +235,12 @@ void all_rule_nodes_targets(Graph G, std::vector<Instrument> &v, int k){
 	for(int i = 0; i < k; ++i){
 		std::vector<int> targets;
 		Instrument t = Instrument(P*=.9); 
-		
+		//cout<<"Instrument "<<i<<": ";
 		for(int j=0; j< no_rule_nodes; ++j){
 			targets.push_back(rule_nodes[j]); 
-			
+		//	cout<<rule_nodes[j]<<" ";
 		}
-		
+		//cout<<endl; 
 		t.set_targets(targets); 
 		v.push_back(t); 
 	}
@@ -283,7 +283,7 @@ case 2: m >= k
 
 
 
-void multiple_improvements_case2_parallel(Graph G, int m, int k ){
+void multiple_improvements_case2_parallel(Graph G, int m, int k, int P){
 	std::vector<Instrument> v; 
 	std::vector<std::string> names;
 	create_targets(G, v, k); 
@@ -318,7 +318,7 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k ){
 		names.push_back(name); 
 	}
 	
-	baron_interface(names); 
+	baron_interface(names, P); 
 	collectres(ceil(k/(double)splits)); 
 }
 
@@ -355,34 +355,26 @@ void multiple_improvements_case2_parallel2(Graph G, int m, int k, int P){
 	collectres(splits); 
 }
 
-void test_BARON_multiple_improvements(Graph G, int m, int k, bool parallel) {
-	cout<<"Graph nodes: "<<G.size()<<", k: "<<k<<", m: "<<m<<endl; 
-
-	if( m >= k ){
-		if(parallel){
-			multiple_improvements_case2_parallel(G, m, k); 
-		}
-		else { 
-			multiple_improvements_case2_sequential(G, m, k); 
-		}
-	}
-}
-
-
-void test_BARON_multiple_improvements(Graph G, bool parallel, int P) {
+void test_BARON_multiple_improvements(Graph G, short parallel, int P) {
 	int m = G.count_type(Rule) / 3; 
 	int k;
 	k = floor(log2(m)); 
 
 	cout<<"Graph nodes: "<<G.size()<<", k: "<<k<<", m: "<<m<<endl; 
 
-	if(parallel){
-		multiple_improvements_case2_parallel2(G, m, k, P); 
-	}
-	else { 
-		multiple_improvements_case2_sequential(G, m, k); 
+	if( m >= k ){
+		if(parallel==0){
+			multiple_improvements_case2_sequential(G, m, k); 	
+		}
+		else if(parallel==1){ 
+			multiple_improvements_case2_parallel(G, m, k, P); 
+		}
+		else if(parallel==2){
+			multiple_improvements_case2_parallel2(G, m, k, P); 
+		}
 	}
 }
+
 
 void generate_graph(Graph &G, int goallayers, int subgoals, int rules, int facts){
 	GraphGenerator GG; 

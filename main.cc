@@ -18,8 +18,7 @@ extern void test_gen_BARON_imp_serial(Graph G);
 extern void test_gen_BARON_imp(Graph G, int P);
 extern void test_gen_BARON_omp(Graph G); 
 extern void test_gen_BARON(Graph G); 
-extern void test_BARON_multiple_improvements(Graph G, int m, int k, bool parallel); 
-extern void test_BARON_multiple_improvements(Graph G, bool parallel, int P); 
+extern void test_BARON_multiple_improvements(Graph G, short parallel,  int P); 
 extern void generate_graph(Graph &G, int goallayers, int subgoals, int rules, int facts); 
 
 void check_sol_dir(){
@@ -99,26 +98,15 @@ int main(int argc, char**argv){
 		test_gen_BARON(G); 
 	}
 	else if (choice == 4){
-		int m = G.count_type(Rule) / 3; 
-		int k;
-		if(m > 2)
-			k = m / 2; 
-		else
-			k = 1;  
-		test_BARON_multiple_improvements(G, m, k, false); 
+		test_BARON_multiple_improvements(G, 0, 0); 
 	}
-	else if (choice == 5){
-		int m = G.count_type(Rule) / 3; 
-		int k;
-		if(m > 2)
-			k = m / 2; 
-		else
-			k = 1;  
-		test_BARON_multiple_improvements(G, m, k, true); 
+	else if (choice == 5){ 
+		int P = atoi(argv[6]); 
+		test_BARON_multiple_improvements(G, 1, P); 
 	}
 	else if (choice == 6){
 		int P = atoi(argv[6]); 
-		test_BARON_multiple_improvements(G, true, P); 
+		test_BARON_multiple_improvements(G, 2, P); 
 	}
 	return 0;
 }
