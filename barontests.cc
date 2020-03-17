@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <cmath>
 #include <ctime>
+#include <thread>
 
 #ifndef AG_GRAPH_HEADER
 #define AG_GRAPH_HEADER 1 
@@ -18,7 +19,7 @@
 using namespace std;
 
 
-extern void baron_interface(std::vector<std::string> &names); 
+extern void baron_interface(std::vector<std::string> &names, int num_threads=0); 
 extern void baron_interface(std::string name); 
 extern void baron_interface(Graph G, int i, bool bg); 
 extern std::string create_baron_file(Graph &G, int i); 
@@ -222,21 +223,65 @@ void create_targets(Graph G, std::vector<Instrument> &v, int k){
 	}
 }
 
-void multiple_improvements_case2_sequential(Graph G, int m, int k ){
-	std::vector<Instrument> v; 
-	create_targets(G, v, k); 
+/*
+For each of the k instruments, add ALL the rule 
+nodes as their target sets. 
+*/
+void all_rule_nodes_targets(Graph G, std::vector<Instrument> &v, int k){
+	std::vector<int> rule_nodes = G.imp_candidate_nodes();
 
-	std::string spec = create_baron_file(G, 0, v, m);
+	int no_rule_nodes = rule_nodes.size();
+	double P = 1.0; 
+	for(int i = 0; i < k; ++i){
+		std::vector<int> targets;
+		Instrument t = Instrument(P*=.9); 
+		
+		for(int j=0; j< no_rule_nodes; ++j){
+			targets.push_back(rule_nodes[j]); 
+			
+		}
+		
+		t.set_targets(targets); 
+		v.push_back(t); 
+	}
+}
+
+std::string produce_single_file(Graph G, int index, std::vector<Instrument> v, int m){
+	std::string spec = create_baron_file(G, index, v, m);
 	std::string path = BARON_RES_PATH; 
-	std::string name = path+"/program_"+std::to_string(0)+".bar";
+	std::string name = path+"/program_"+std::to_string(index)+".bar";
 	ofstream programfile; 
 	programfile.open(name);
 	programfile<<spec; 
 	programfile.close();
+	return name; 
+}
+
+
+void multiple_improvements_case2_sequential(Graph G, int m, int k ){
+	std::vector<Instrument> v; 
+	all_rule_nodes_targets(G, v, k); 
+
+	std::string name = produce_single_file(G, 0, v, m);
 
 	baron_interface(name); 
 	collectres(1); 
 }
+
+/*
+Multiple improvements test:
+This function receives a graph G and a vector of improvement instruments.
+Each improvement instrument is represented by a vector of nodes and 
+a probability value. The vector of nodes are the improvement target
+rule nodes of the given improvement instrument. 
+m: number of acceptable placements 
+k: number of available instruments (v.size())
+Two cases are considered: 
+case 1: 1 < m < k 
+case 2: m >= k 
+*/
+
+
 
 void multiple_improvements_case2_parallel(Graph G, int m, int k ){
 	std::vector<Instrument> v; 
@@ -269,13 +314,7 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k ){
 		for(int j = 0; j < splits; ++j){
 			v_single.push_back(v[i+j]); 
 		}
-		std::string spec = create_baron_file(G, i, v_single, m);
-		std::string path = BARON_RES_PATH; 
-		std::string name = path+"/program_"+std::to_string(i)+".bar";
-		ofstream programfile; 
-		programfile.open(name);
-		programfile<<spec; 
-		programfile.close();
+		std::string name  = produce_single_file(G, i, v_single, m);
 		names.push_back(name); 
 	}
 	
@@ -283,19 +322,38 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k ){
 	collectres(ceil(k/(double)splits)); 
 }
 
-/*
-Multiple improvements test:
-This function receives a graph G and a vector of improvement instruments.
-Each improvement instrument is represented by a vector of nodes and 
-a probability value. The vector of nodes are the improvement target
-rule nodes of the given improvement instrument. 
-m: number of acceptable placements 
-k: number of available instruments (v.size())
-Two cases are considered: 
-case 1: 1 < m < k 
-case 2: m >= k 
-Each one is tested both sequential and parallel. 
-*/
+void multiple_improvements_case2_parallel2(Graph G, int m, int k, int P){
+	std::vector<std::string> names;
+	unsigned no_threads = std::thread::hardware_concurrency();
+	int p = no_threads/4; 
+	const clock_t begin_time = clock();
+	std::vector<Graph> X = G.partitiongraph(); 
+
+	int splits = X.size(); 
+	cout<<"Number of subin-trees:"<<splits<<endl;
+
+	for(int i = 0; i < splits; ++i){
+		X[i].print();
+
+		/*
+		Each subtree applies k options from which m/p are selected.
+		*/
+		std::vector<Instrument> v; 
+		all_rule_nodes_targets(X[i],v,k); 
+
+		/*
+		create baron file 
+		*/
+		std::string name = produce_single_file(X[i], i, v, m);
+		names.push_back(name); 
+	}
+
+	std::cout << "Time (s) spent for preparation: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
+
+
+	baron_interface(names, P); 
+	collectres(splits); 
+}
 
 void test_BARON_multiple_improvements(Graph G, int m, int k, bool parallel) {
 	cout<<"Graph nodes: "<<G.size()<<", k: "<<k<<", m: "<<m<<endl; 
@@ -308,11 +366,23 @@ void test_BARON_multiple_improvements(Graph G, int m, int k, bool parallel) {
 			multiple_improvements_case2_sequential(G, m, k); 
 		}
 	}
-	else { 
-
-	}
 }
 
+
+void test_BARON_multiple_improvements(Graph G, bool parallel, int P) {
+	int m = G.count_type(Rule) / 3; 
+	int k;
+	k = floor(log2(m)); 
+
+	cout<<"Graph nodes: "<<G.size()<<", k: "<<k<<", m: "<<m<<endl; 
+
+	if(parallel){
+		multiple_improvements_case2_parallel2(G, m, k, P); 
+	}
+	else { 
+		multiple_improvements_case2_sequential(G, m, k); 
+	}
+}
 
 void generate_graph(Graph &G, int goallayers, int subgoals, int rules, int facts){
 	GraphGenerator GG; 

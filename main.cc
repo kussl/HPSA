@@ -19,6 +19,7 @@ extern void test_gen_BARON_imp(Graph G, int P);
 extern void test_gen_BARON_omp(Graph G); 
 extern void test_gen_BARON(Graph G); 
 extern void test_BARON_multiple_improvements(Graph G, int m, int k, bool parallel); 
+extern void test_BARON_multiple_improvements(Graph G, bool parallel, int P); 
 extern void generate_graph(Graph &G, int goallayers, int subgoals, int rules, int facts); 
 
 void check_sol_dir(){
@@ -114,6 +115,10 @@ int main(int argc, char**argv){
 		else
 			k = 1;  
 		test_BARON_multiple_improvements(G, m, k, true); 
+	}
+	else if (choice == 6){
+		int P = atoi(argv[6]); 
+		test_BARON_multiple_improvements(G, true, P); 
 	}
 	return 0;
 }

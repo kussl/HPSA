@@ -66,15 +66,21 @@ void baron_files(std::vector<Graph> X, std::vector<std::string> &names){
 	}
 }
 
-void baron_interface(std::vector<std::string> &names){
+void baron_interface(std::vector<std::string> &names, int num_threads=0){
 
 	pid_t wpid,pid,pids[names.size()]; 
 	int status,i, size = names.size(); 
 
-	unsigned no_threads = std::thread::hardware_concurrency();
-	cout<<"No threads available: "<<no_threads<<endl; 
+	if(num_threads == 0){
+		unsigned no_threads = std::thread::hardware_concurrency();
+		num_threads = no_threads/4;
+		cout<<"Setting number of threads to: "<<num_threads<<endl; 
+	}
+	else {
+		cout<<"Number of threads set to: "<<num_threads<<endl; 
+	}
 
-	#pragma omp parallel private(i) num_threads(no_threads/4)  
+	#pragma omp parallel private(i) num_threads(num_threads/4)  
 	{
 		#pragma omp for nowait schedule(guided) 
 		for(i=0; i<size;++i){

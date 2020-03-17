@@ -32,25 +32,36 @@ Adds rule node constraints with the addition of an improvement node.
 For now, last argument plays no role. 
 */
 
-std::string rule_constraints(Graph &G, Node n, int e, double improvement){
+std::string rule_constraints(Graph &G, Node n, int e, std::vector<Instrument> v, std::vector<std::string> &tnodes, bool &found){
 	std::string constraints; 
 
 	constraints="e"+std::to_string(e)+": -x"+std::to_string(n.nodeid())+"+";
 
 	std::vector<int> P = G.preds(n.nodeid());
-	double weight = 1.0/P.size();
+
 	for(int j = 0; j < P.size(); ++j){
 		constraints+="x"+std::to_string(P[j]);
 		constraints+= "*";
 	}
 
 	constraints.replace(constraints.length()-1,1,"*");
-	std::string tid = std::to_string(n.nodeid()); 
+	int inst_size = v.size();
 
-	//constraints+=std::to_string(improvement)+"^t"+std::to_string(n.nodeid())+" <= 0;"; 
-	constraints+= "((1-t"+tid+")+t"+tid+"*(1-"+std::to_string(improvement)+")) == 0;\n"; 
-	//constraints+="t"+tid+"<= 0; "; 
-	constraints+= "e"+std::to_string(e)+"b: t"+tid+" - t"+tid+"^2 == 0; ";
+	for(int k = 0; k < inst_size; ++k){
+		std::string tid = std::to_string(n.nodeid())+"_"+std::to_string(k); 
+		if(std::find(v[k].targets.begin(), v[k].targets.end(), n.nodeid()) != v[k].targets.end()){
+			constraints+= "((1-t"+tid+")+t"+tid+"*(1-"+std::to_string(v[k].nodeP())+"))*"; 
+			found = true; 
+			tnodes.push_back(tid); 
+		}
+	}
+	constraints.replace(constraints.length()-1,1," == 0;\n");
+	for(int k = 0; k < inst_size; ++k){
+		std::string tid = std::to_string(n.nodeid())+"_"+std::to_string(k); 
+		constraints+= "e_t"+tid+": t"+tid+" - t"+tid+"^2 == 0;\n";
+	}
+	
+	
 	constraints+="\n";
 	return constraints; 
 }
@@ -106,13 +117,13 @@ std::string goal_constraints(Graph &G, Node n, int e){
 	return constraints; 
 }
 
-std::string add_improvement_constraints(std::vector<int> rulenodes, int e, int m){
+std::string add_improvement_constraints(std::vector<std::string> rulenodes, int e, int m){
 	/*Add rule node constraint*/
 	std::string constraints="e"+std::to_string(e)+": ";
 	int no_rule_nodes = rulenodes.size(); 
 	//std::cout<<"No rule nodes: "<<no_rule_nodes<<std::endl; 
 	for (int i = 0; i <no_rule_nodes; ++i)
-		constraints+= "t"+std::to_string(rulenodes[i])+"+";
+		constraints+= "t"+rulenodes[i]+"+";
 	
 	std::string total; 
 	if(m <= 0)
@@ -177,7 +188,7 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 	std::vector<Node>::iterator nit = G.graph_nodes(); 
 	std::vector<Node>::iterator onit = nit; 
 	std::vector<int> rulenodes;
-	std::vector<int> tnodes;
+	std::vector<std::string> tnodes;
 	int e =0; 
 	
 	/*
@@ -205,15 +216,10 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 		if (nit->nodetype()==Rule) {
 			//Only add an improvement constraint if the node is in the candidates vector. 
 			int inst_size = v.size();
-			bool found = false;  
-			for(int k = 0; k < inst_size; ++k){
-				if(std::find(v[k].targets.begin(), v[k].targets.end(), nit->nodeid()) != v[k].targets.end()){
-					constraints += rule_constraints(G, *nit, e, v[k].nodeP()); 
-					found = true; 
-					tnodes.push_back(nit->nodeid()); 
-				}
-			}
-			if (!found) { 
+			bool found = false; 
+			constraints += rule_constraints(G, *nit, e, v, tnodes, found);  
+			
+			if (!found)  { 
 				constraints += rule_constraints(G, *nit, e); 
 			}
 			rulenodes.push_back(nit->nodeid()); 
@@ -233,7 +239,7 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 	Add the extra constraints for t variables
 	*/
 	for(int i = 0; i < tnodes.size(); ++i)
-		eq_declarations+="e"+std::to_string(tnodes[i])+"b,";
+		eq_declarations+="e_t"+tnodes[i]+",";
 
 	eq_declarations.replace(eq_declarations.length()-1,1,";\n\n");
 
@@ -328,6 +334,7 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G,
 		declaration+= "x"+std::to_string(onit->nodeid());
 		vars.push_back("x"+std::to_string(onit->nodeid())); 
 
+
 		if(onit->nodetype()==Goal){
 			//add aux variables  
 			//aux_declarations+= add_aux_vars(G, vars, onit->nodeid()); 
@@ -340,7 +347,7 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G,
 
 			for(int k = 0; k < inst_size; ++k){
 				if(std::find(v[k].targets.begin(), v[k].targets.end(), onit->nodeid()) != v[k].targets.end()){
-					std::string tnodeid = "t"+std::to_string(onit->nodeid());  
+					std::string tnodeid = "t"+std::to_string(onit->nodeid())+"_"+std::to_string(k);  
 					imp_declarations+= tnodeid+",";
 					imp_i++;
 					tvars.push_back(tnodeid); 
