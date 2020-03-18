@@ -259,6 +259,20 @@ std::string produce_single_file(Graph G, int index, std::vector<Instrument> v, i
 
 
 void multiple_improvements_case2_sequential(Graph G, int m, int k ){
+	//To sync the value of m with the parallel version.
+	std::vector<Graph> X = G.partitiongraph(); 
+	int size = X.size();
+	m = size * 2; 
+	k = floor(log2(m)); 
+	if (k < 1)
+		k = 1; 
+
+	int no_rule_nodes = G.count_type(Rule); 
+	cout<<"Number of instruments: k="<<k<<endl; 
+	cout<<"Number of rule nodes: "<<no_rule_nodes<<endl; 
+	cout<<"Acceptable placements: m="<<m<<endl; 
+
+
 	std::vector<Instrument> v; 
 	all_rule_nodes_targets(G, v, k); 
 
