@@ -318,55 +318,57 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k, int P){
 }
 
 void multiple_improvements_case2_parallel2(Graph G, int P){
-	std::vector<std::string> names;
-	unsigned no_threads = std::thread::hardware_concurrency();
-	int p = no_threads/4; 
-	//const clock_t begin_time = clock();
+	size_t size = 0; 
 	std::vector<Graph> X = G.partitiongraph(); 
 
+	cout<<"Number of nodes: "<<G.size()<<endl; 
+	size = X.size(); 
+
+	cout<<"Number of subgraphs, L="<<size<<endl; 
+
+	/*
+		m: number of acceptable placements (relative to the number of rule nodes).
+		k: number of instruments. 
+	*/
 	int m = G.count_type(Rule) / 3; 
 	int k;
 	k = floor(log2(m)); 
 	if (k < 1)
 		k = 1; 
 
-	int splits = X.size(); 
-	cout<<"Number of subin-trees: "<<splits<<endl;
+	cout<<"Number of instruments: k="<<k<<endl; 
+	cout<<"Acceptable placements: m="<<m<<endl; 
 
-	m = ceil(m/splits);
-	cout<<"For each subin-tree, m: "<<m<<endl;
+	/*
+		Each subproblem receives a portion of the m acceptable placements. 
+	*/
+	m = ceil(m/(double)size);
 
-	for(int i = 0; i < splits; ++i){
-		X[i].print();
+	cout<<"Acceptable placements for each subproblem, m="<<m<<endl; 
 
-		/*
-		Each subtree applies k options from which m/p are selected.
-		*/
+	std::vector<std::string> names;
+	for (int i = 0; i < size; ++i){
 		std::vector<Instrument> v; 
-		all_rule_nodes_targets(X[i],v,k); 
+		all_rule_nodes_targets(G, v, k); 
 
-		/*
-		create baron file 
-		*/
-		std::string name = produce_single_file(X[i], i, v, m);
+		std::string name = produce_single_file(G, i, v, m);
 		names.push_back(name); 
 	}
 
-
-	baron_interface(names, P); 
-	
+	baron_files(X, names); 
+	baron_interface(names, P);
+	//Record the time for the extra effort. 
 	const clock_t begin_time = clock();
+	cout<<"Reading solutions."<<endl; 
 
 	readsolution(X);
 	Graph AG = combine_subtrees(G,X); 
 	cout<<"Final solution: "<<endl; 
-	collectres(splits); 
+	collectres(size); 
 
 	std::cout << "Time (s) spent for preparation: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
 
 	test_gen_BARON_imp_serial(AG); 
-
-	
 }
 
 

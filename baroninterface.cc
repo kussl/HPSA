@@ -81,7 +81,6 @@ void baron_interface(std::vector<std::string> &names, int num_threads=0){
 		cout<<"Number of threads set to: "<<num_threads<<endl; 
 	}
 
-	const clock_t begin_time = clock();
 
 	#pragma omp parallel private(i) num_threads(num_threads)  
 	{
@@ -99,8 +98,7 @@ void baron_interface(std::vector<std::string> &names, int num_threads=0){
 	while ((wpid = wait(&status)) > 0)
 		;
 
-    cout<<"Computation done in parallel.\n";
-    std::cout << float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
+
 
 }
 
