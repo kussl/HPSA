@@ -330,13 +330,16 @@ void multiple_improvements_case2_parallel2(Graph G, int P){
 		m: number of acceptable placements (relative to the number of rule nodes).
 		k: number of instruments. 
 	*/
-	int m = G.count_type(Rule) / 3; 
+	int m = size * 2; 
 	int k;
 	k = floor(log2(m)); 
 	if (k < 1)
 		k = 1; 
 
+	int no_rule_nodes = G.count_type(Rule); 
+
 	cout<<"Number of instruments: k="<<k<<endl; 
+	cout<<"Number of rule nodes: "<<no_rule_nodes<<endl; 
 	cout<<"Acceptable placements: m="<<m<<endl; 
 
 	/*
