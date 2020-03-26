@@ -317,7 +317,7 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k, int P){
 
 	for(int i = 0; i < k; i+=splits){
 		std::vector<Instrument> v_single;
-		for(int j = 0; j < splits; ++j){
+		for(int j = 0; j < splits && (i+j) < k; ++j){
 			v_single.push_back(v[i+j]); 
 		}
 		std::string name  = produce_single_file(G, i, v_single, m);
@@ -417,8 +417,12 @@ void test_BARON_multiple_improvements(Graph G, short parallel, int P) {
 
 void test_BARON_single_placement_serial(Graph G){
 	int no_rule_nodes = G.count_type(Rule); 
-	int k = 2; 
-	int m = 1; 
+	int k = 4; 
+	int m = G.count_type(Rule) / 3; 
+	k = floor(log2(m)); 
+	if (k < 1)
+		k = 1; 
+	m = 1; 
 	int n = G.size(); 
 
 	cout<<"Graph nodes: "<<n<<" Rule nodes: "<<no_rule_nodes<<", k: "<<k<<", m: "<<m<<endl; 
@@ -428,8 +432,12 @@ void test_BARON_single_placement_serial(Graph G){
 
 void test_BARON_single_placement_parallel(Graph G, int P){
 	int no_rule_nodes = G.count_type(Rule); 
-	int k = 2; 
-	int m = 1; 
+	int k = 4; 
+	int m = G.count_type(Rule) / 3; 
+	k = floor(log2(m)); 
+	if (k < 1)
+		k = 1; 
+	m = 1; 
 	int n = G.size(); 
 
 	cout<<"Graph nodes: "<<n<<" Rule nodes: "<<no_rule_nodes<<", k: "<<k<<", m: "<<m<<endl; 
