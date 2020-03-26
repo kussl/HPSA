@@ -262,10 +262,7 @@ void multiple_improvements_case2_sequential(Graph G, int m, int k ){
 	//To sync the value of m with the parallel version.
 	std::vector<Graph> X = G.partitiongraph(); 
 	int size = X.size();
-	m = size * 2; 
-	k = floor(log2(m)); 
-	if (k < 1)
-		k = 1; 
+	
 
 	int no_rule_nodes = G.count_type(Rule); 
 	cout<<"Number of instruments: k="<<k<<endl; 
@@ -306,7 +303,7 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k, int P){
 	For each instrument, create a separate optimization problem
 	to be solved in parallel. 
 	*/
-	m /= k; 
+	//m /= k; 
 	cout<<"Sub-m: "<<m<<endl; 
 
 	/*
@@ -331,7 +328,7 @@ void multiple_improvements_case2_parallel(Graph G, int m, int k, int P){
 	collectres(splits); 
 }
 
-void multiple_improvements_case2_parallel2(Graph G, int P){
+void multiple_improvements_case2_parallel2(Graph G, int m, int k,int P){
 	size_t size = 0; 
 	std::vector<Graph> X = G.partitiongraph(); 
 
@@ -344,11 +341,7 @@ void multiple_improvements_case2_parallel2(Graph G, int P){
 		m: number of acceptable placements (relative to the number of rule nodes).
 		k: number of instruments. 
 	*/
-	int m = size * 2; 
-	int k;
-	k = floor(log2(m)); 
-	if (k < 1)
-		k = 1; 
+	
 
 	int no_rule_nodes = G.count_type(Rule); 
 
@@ -395,20 +388,53 @@ void test_BARON_multiple_improvements(Graph G, short parallel, int P) {
 	k = floor(log2(m)); 
 	if (k < 1)
 		k = 1; 
+	int size = G.size();
 
 	cout<<"Graph nodes: "<<G.size()<<", k: "<<k<<", m: "<<m<<endl; 
 
 	if( m >= k ){
 		if(parallel==0){
+			m = size * 2; 
+			k = floor(log2(m)); 
+			if (k < 1){
+				k = 2; 
+			}
 			multiple_improvements_case2_sequential(G, m, k); 	
 		}
 		else if(parallel==1){ 
 			multiple_improvements_case2_parallel(G, m, k, P); 
 		}
 		else if(parallel==2){
-			multiple_improvements_case2_parallel2(G, P); 
+			m = size * 2; 
+			k = floor(log2(m)); 
+			if (k < 1)
+				k = 1; 		
+			m /= k; 	
+			multiple_improvements_case2_parallel2(G, m, k, P); 
 		}
 	}
+}
+
+void test_BARON_single_placement_serial(Graph G){
+	int no_rule_nodes = G.count_type(Rule); 
+	int k = 2; 
+	int m = 1; 
+	int n = G.size(); 
+
+	cout<<"Graph nodes: "<<n<<" Rule nodes: "<<no_rule_nodes<<", k: "<<k<<", m: "<<m<<endl; 
+
+	multiple_improvements_case2_sequential(G, m, k); 
+}
+
+void test_BARON_single_placement_parallel(Graph G, int P){
+	int no_rule_nodes = G.count_type(Rule); 
+	int k = 2; 
+	int m = 1; 
+	int n = G.size(); 
+
+	cout<<"Graph nodes: "<<n<<" Rule nodes: "<<no_rule_nodes<<", k: "<<k<<", m: "<<m<<endl; 
+
+	multiple_improvements_case2_parallel(G, m, k, P); 
 }
 
 

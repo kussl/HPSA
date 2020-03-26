@@ -19,6 +19,8 @@ extern void test_gen_BARON_imp(Graph G, int P);
 extern void test_gen_BARON_omp(Graph G, int P); 
 extern void test_gen_BARON(Graph G); 
 extern void test_BARON_multiple_improvements(Graph G, short parallel,  int P); 
+extern void test_BARON_single_placement_serial(Graph G); 
+extern void test_BARON_single_placement_parallel(Graph G, int P); 
 extern void generate_graph(Graph &G, int goallayers, int subgoals, int rules, int facts); 
 
 void check_sol_dir(){
@@ -84,30 +86,47 @@ int main(int argc, char**argv){
 
 	generate_graph(G, goallayers,subgoals,rules,facts); 
 
+
+	//k=1 m>1 parallel improvement
 	if (choice == 0){
 		int P = atoi(argv[6]); 
 		test_gen_BARON_imp(G,P);
 	}
+	//k=1 m>1 serial improvement
 	else if (choice == 1){
 		test_gen_BARON_imp_serial(G);
 	}
+	//Parallel propagation 
 	else if (choice == 2){
 		int P = atoi(argv[6]); 
 		test_gen_BARON_omp(G, P); 
 	}
+	//Serial Propagation
 	else if (choice == 3){
 		test_gen_BARON(G); 
 	}
+	//k>1, m>1 serial improvement
 	else if (choice == 4){
 		test_BARON_multiple_improvements(G, 0, 0); 
 	}
+	//k>1, m>1 multiple improvement (improvement partitioning)
 	else if (choice == 5){ 
 		int P = atoi(argv[6]); 
 		test_BARON_multiple_improvements(G, 1, P); 
 	}
+	//k>1, m>1 multiple improvement (tree partitioning)
 	else if (choice == 6){
 		int P = atoi(argv[6]); 
 		test_BARON_multiple_improvements(G, 2, P); 
+	}
+	//k>1, m=1 single placement improvement (serial)
+	else if (choice == 7){
+		test_BARON_single_placement_serial(G); 
+	}
+	//k>1, m=1 single placement improvement (serial)
+	else if (choice == 8){
+		int P = atoi(argv[6]); 
+		test_BARON_single_placement_parallel(G,P); 
 	}
 	return 0;
 }
