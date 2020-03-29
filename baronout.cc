@@ -413,10 +413,10 @@ std::string options_macos(int index){
 	spec += "PrLevel: 0; \n";
 	spec += "LocRes: 0; \n"; 
 	spec += "DoLocal: 1;\n";
-	spec += "FirstLoc: 1;\n";
+	//spec += "FirstLoc: 1;\n";
 	spec += "LPSol: 8;\n";
 	//spec += "MaxTime: 4;\n";
-	spec += "MaxIter: 50;\n"; 
+	spec += "MaxIter: 10;\n"; 
 	spec += "CplexLibName: \"/Applications/CPLEX_Studio1210/cplex/bin/x86-64_osx/libcplex12100.dylib\";";
 	spec += "}\n";
 	return spec; 

@@ -27,99 +27,13 @@ extern std::string create_baron_file(Graph &G, int index, std::vector<int> candi
 extern std::string create_baron_file(Graph &G, int index, std::vector<Instrument> v, int m); 
 extern void baron_files(std::vector<Graph> X, std::vector<std::string> &names); 
 void collectres(size_t size); 
-void test_gen_BARON_imp_serial(Graph G); 
+void improve_BARON_serial(Graph G); 
 void readsolution(std::vector<Graph> &X); 
 
-/*
-Run improvement options in parallel using a combination of OpenMP and BARON threads. 
-*/
-
-void test_gen_BARON_imp(Graph G, int P){
-	cout<<"Number of nodes: "<<G.size()<<endl; 
-	double improvement = 0.8; 
-	size_t size = 0; 
-
-	/*
-	Loop through all rule nodes. Each rule node (or a subset of rule nodes) is a candidate placement. 
-	Make a separate BARON problem for each rule node and compute the improvement in parallel. 
-	*/
-	std::vector<int> candidate_nodes = G.imp_candidate_nodes();
-	size = candidate_nodes.size(); 
-
-	cout<<"Number of candidate placements: "<<candidate_nodes.size()<<endl; 
-	std::vector<std::string> names;
-
-	/*
-	This for-loop takes subsets of rule nodes in each iteration (more than one). 
-	*/
-	int i,j=0,k; 
-	int subset_size = candidate_nodes.size() / P; 
-
-	if(size <= P){
-		test_gen_BARON_imp_serial(G);
-		return; 
-	}
-
-	cout<<"Placements in each subset: "<<subset_size<<endl;
 
 
-	for (i=0; i<P; ++i){
-		std::vector<int> v;
-		for(k=0; j<size && k < subset_size; ++j, ++k)
-			v.push_back(candidate_nodes[j]); 
-
-		std::string spec = create_baron_file(G, i, v, improvement, 1);
-		std::string name = BARON_RES_PATH + "/program_"+std::to_string(i)+".bar";
-		ofstream programfile; 
-		programfile.open(name);
-		programfile<<spec; 
-		programfile.close();
-		names.push_back(name); 
-	}
-
-	size = P; 
-
-	baron_interface(names, P); 
-	collectres(size); 
-}
-
-/* 
-Run improvement options serially.  
-*/
-void test_gen_BARON_imp_serial(Graph G){
-	cout<<"Number of nodes: "<<G.size()<<endl; 
-	
-	double improvement = 0.8; 
-	size_t size = 0; 
-
-	/*
-	Loop through all rule nodes. Each rule node is a candidate placement. 
-	Make a separate BARON problem for each rule node and compute the improvement in parallel. 
-	*/
-	std::vector<int> candidate_nodes = G.imp_candidate_nodes();
-	size = candidate_nodes.size(); 
-
-	cout<<"Number of candidate placements: "<<candidate_nodes.size()<<endl; 
-	std::vector<std::string> names;
-	std::vector<int> v;
-	for(int i =0; i<size; ++i){
-		v.push_back(candidate_nodes[i]); 
-	}
-
-	std::string spec = create_baron_file(G, 0, v, improvement, 1);
-	std::string path = BARON_RES_PATH; 
-	std::string name = path+"/program_"+std::to_string(0)+".bar";
-	ofstream programfile; 
-	programfile.open(name);
-	programfile<<spec; 
-	programfile.close();
-
-	baron_interface(name); 
-	collectres(1); 
-}
-
-void test_gen_BARON(Graph G){
-	cout<<"Number of nodes: "<<G.size()<<endl; 
+void propagate_probabilities_serial(Graph G){
+	cout<<"Propagating probabilities (serial), number of nodes: "<<G.size()<<endl; 
 
 	std::string spec = create_baron_file(G, 0);
 	std::string path = BARON_RES_PATH; 
@@ -133,7 +47,7 @@ void test_gen_BARON(Graph G){
 	X.push_back(G); 
 
 	baron_files(X, names); 
-	baron_interface(names);
+	baron_interface(names, -1); //Set num_threads to -1 to run one thread only.
 	collectres(1); 	
 }
 
@@ -173,11 +87,13 @@ Graph combine_subtrees(Graph G, std::vector<Graph> X){
 	return AG; 
 }
 
-void test_gen_BARON_omp(Graph G, int P){
+void propagate_probabilities_parallel(Graph G, int P){
 	size_t size = 0; 
+	double preparation_time = 0.0; 
+
 	std::vector<Graph> X = G.partitiongraph(); 
 
-	cout<<"Number of nodes: "<<G.size()<<endl; 
+	cout<<"Propagating probabilities (parallel), number of nodes: "<<G.size()<<endl; 
 	size = X.size(); 
 
 	cout<<"Number of subgraphs: "<<size<<endl; 
@@ -192,13 +108,108 @@ void test_gen_BARON_omp(Graph G, int P){
 	Graph AG = combine_subtrees(G,X); 
 	cout<<"Final solution: "<<endl; 
 	collectres(size); 
+	preparation_time = double( clock () - begin_time ) /  CLOCKS_PER_SEC; 
 
-	std::cout << "Time (s) spent for preparation: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
+	std::cout << "Time (s) spent for preparation: "<<preparation_time<<endl;
 
-	test_gen_BARON(AG); 
+	std::cout<<"Combining the parallel results and recomputing the final value: \n"; 
+	
+	propagate_probabilities_serial(AG); 
+}
+
+void propagate_probabilities(Graph G, int P){
+	propagate_probabilities_serial(G); 
+	propagate_probabilities_parallel(G, P); 
 }
 
 
+
+/*
+Run improvement options in parallel using a combination of OpenMP and BARON threads. 
+*/
+
+void improve_BARON_parallel(Graph G, int P){
+	cout<<"Number of nodes: "<<G.size()<<endl; 
+	double improvement = 0.8; 
+	size_t size = 0; 
+
+	/*
+	Loop through all rule nodes. Each rule node (or a subset of rule nodes) is a candidate placement. 
+	Make a separate BARON problem for each rule node and compute the improvement in parallel. 
+	*/
+	std::vector<int> candidate_nodes = G.imp_candidate_nodes();
+	size = candidate_nodes.size(); 
+
+	cout<<"Number of candidate placements: "<<candidate_nodes.size()<<endl; 
+	std::vector<std::string> names;
+
+	/*
+	This for-loop takes subsets of rule nodes in each iteration (more than one). 
+	*/
+	int i,j=0,k; 
+	int subset_size = candidate_nodes.size() / P; 
+
+	if(size <= P){
+		improve_BARON_serial(G);
+		return; 
+	}
+
+	cout<<"Placements in each subset: "<<subset_size<<endl;
+
+
+	for (i=0; i<P; ++i){
+		std::vector<int> v;
+		for(k=0; j<size && k < subset_size; ++j, ++k)
+			v.push_back(candidate_nodes[j]); 
+
+		std::string spec = create_baron_file(G, i, v, improvement, 1);
+		std::string name = BARON_RES_PATH + "/program_"+std::to_string(i)+".bar";
+		ofstream programfile; 
+		programfile.open(name);
+		programfile<<spec; 
+		programfile.close();
+		names.push_back(name); 
+	}
+
+	size = P; 
+
+	baron_interface(names, P); 
+	collectres(size); 
+}
+
+/* 
+Run improvement options serially.  
+*/
+void improve_BARON_serial(Graph G){
+	cout<<"Number of nodes: "<<G.size()<<endl; 
+	
+	double improvement = 0.8; 
+	size_t size = 0; 
+	int m = 1; 
+	int index = 0; 
+
+	std::vector<int> candidate_nodes = G.imp_candidate_nodes();
+	size = candidate_nodes.size(); 
+
+	cout<<"Candidate placements (tau): "<<candidate_nodes.size()<<", rule nodes: "<<G.count_type(Rule)<<", m="<<m<<endl; 
+	std::vector<std::string> names;
+	std::vector<int> v;
+
+	for(int i =0; i<size; ++i){
+		v.push_back(candidate_nodes[i]); 
+	}
+
+	std::string spec = create_baron_file(G, index, v, improvement, m);
+	std::string path = BARON_RES_PATH; 
+	std::string name = path+"/program_"+std::to_string(0)+".bar";
+	ofstream programfile; 
+	programfile.open(name);
+	programfile<<spec; 
+	programfile.close();
+
+	baron_interface(name); 
+	collectres(1); 
+}
 
 /*
 For each of the k instruments, create a target set
@@ -378,7 +389,7 @@ void multiple_improvements_case2_parallel2(Graph G, int m, int k,int P){
 
 	std::cout << "Time (s) spent for preparation: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC<<endl;
 
-	test_gen_BARON_imp_serial(AG); 
+	improve_BARON_serial(AG); 
 }
 
 
@@ -434,7 +445,7 @@ void test_BARON_single_placement_parallel(Graph G, int P){
 	int no_rule_nodes = G.count_type(Rule); 
 	int k = 4; 
 	int m = G.count_type(Rule) / 3; 
-	k = floor(log2(m)); 
+	k = floor(log2(m))*6; 
 	if (k < 1)
 		k = 1; 
 	m = 1; 
@@ -446,9 +457,14 @@ void test_BARON_single_placement_parallel(Graph G, int P){
 }
 
 
+void improve_security(Graph G, int P){
+	improve_BARON_serial(G); 
+}
+
+
 void generate_graph(Graph &G, int goallayers, int subgoals, int rules, int facts){
 	GraphGenerator GG; 
-	cout<<"Generating a synthetic AG: layers: "<<goallayers<<", subgoals: "<<subgoals<<", rules: "<<rules<<", facts: "<<facts<<endl; 
+	//cout<<"Generating a synthetic AG: layers: "<<goallayers<<", subgoals: "<<subgoals<<", rules: "<<rules<<", facts: "<<facts<<endl; 
 	//int goallayers, int subgoals, int rules, int facts
 	G = GG.treetopology(goallayers,subgoals,rules,facts);
 	G.print(SOL_PATH+"graph.dot");
@@ -470,5 +486,5 @@ void collectres(size_t size){
 	while ((wpid = wait(&status)) > 0)
 		;
 
-    cout<<"Done collecting results.\n";
+    cout<<"==============================\n";
 }

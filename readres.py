@@ -65,9 +65,8 @@ def recallres(size):
 	for f in files: 
 		os.remove(path+f)
 
-print("Collecting results..")
-
 size = int(sys.argv[1])
-print('Size: ', size) 
+#print('Size: ', size) 
 
 recallres(size)
+#print("------------------------------")

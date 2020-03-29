@@ -77,6 +77,9 @@ void baron_interface(std::vector<std::string> &names, int num_threads=0){
 		num_threads = no_threads/4;
 		cout<<"Setting number of threads to: "<<num_threads<<endl; 
 	}
+	else if(num_threads < 0){
+		num_threads = 1; 
+	}
 	else {
 		cout<<"Number of threads set to: "<<num_threads<<endl; 
 	}
