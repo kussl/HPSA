@@ -260,6 +260,35 @@ std::vector<Graph> Graph::partitiongraph(){
 	return X; 
 }
 
+Graph Graph::combine_subtrees(std::vector<Graph> X){
+	Graph AG;
+	//iterator for X:
+	int k = 0; 
+
+	//Add the leaf node 
+	int leaf_id = AG.addnode(AUTO_ID, Goal, 0); 
+	//Its predecessors come from G 
+	std::vector<int> pred = this->preds(0);
+	int no_preds = pred.size(); 
+	for(int i = 0; i < no_preds; ++i){
+		AG.addnode(pred[i], Rule, 0); 
+		AG.addedge(pred[i], leaf_id);	
+		
+		// Add the leaf nodes in the subtrees of X as
+		// predecessors of the rule nodes in AG. 
+		 
+		std::vector<int> rule_pred = this->preds(pred[i]); 
+		int no_rule_preds = rule_pred.size(); 
+		for(int j = 0; j<no_rule_preds; ++j){
+			Node n = X[k].graph_nodes()[0];
+			++k; 
+			AG.addnode(n.nodeid(), Fact, n.nodeP()); 
+			AG.addedge(rule_pred[j], pred[i]);  
+		}
+	}
+	return AG; 
+}
+
 
 
 std::vector<int> Graph::imp_candidate_nodes(){
@@ -325,6 +354,78 @@ Graph GraphGenerator::treetopology(int goallayers, int subgoals, int rules, int 
 	G.construct_node_indexes(); 
 	G.fillpreds(); 
 
+	return G; 
+}
+
+/*
+In this topology, a total of L layers are created. 
+The first layer contains only the ultimate goal node and the last layer contains only the fact nodes. 
+In the L-2 intermediate layers, we alternate between generating rule or goal nodes based on the type of
+the predecessor. 
+For each layer, we generate the appropriate type of nodes and attach them to the nodes created in the last layer. 
+*/
+
+Graph GraphGenerator::hierarchical_topology(int L, int goal_nodes, int rule_nodes, int fact_nodes){
+	Graph G; 
+	
+	//Add the ultimate goal node. 
+	int ultimate_goal = G.addnode(AUTO_ID,Goal,0); 
+	NType last_layer_type = Goal; 
+	std::vector<int> last_layer_nodes;
+	last_layer_nodes.push_back(ultimate_goal);
+	NType this_layer_type = Goal;
+
+	for(int l = 1; l < (L-1); ++l){
+		std::vector<int> this_layer_nodes;
+		int no_nodes_to_add = rule_nodes; 
+		
+		if(last_layer_type == Rule){
+			this_layer_type = Goal;
+			no_nodes_to_add = goal_nodes; 
+		}else if(last_layer_type == Goal){
+			this_layer_type = Rule;
+			no_nodes_to_add = rule_nodes; 
+		}
+
+		//cout<<"Type: "<<this_layer_type<<", last: "<<last_layer_type<<", nodes to add: "<<no_nodes_to_add<<", layer: "<<l<<endl;  
+
+		int no_nodes_last = last_layer_nodes.size(); 
+
+		for(int i = 0; i < no_nodes_last ;++i){
+			for (int j = 0; j < no_nodes_to_add; ++j){
+				int node_id = G.addnode(AUTO_ID,this_layer_type,0);
+				G.addedge(node_id,last_layer_nodes[i]);
+				this_layer_nodes.push_back(node_id); 
+			}
+		}
+
+		last_layer_nodes.clear();
+		int added_nodes = this_layer_nodes.size();  
+		for(int i = 0; i < added_nodes; ++i)
+			last_layer_nodes.push_back(this_layer_nodes[i]); 
+		last_layer_type = this_layer_type; 
+
+	}
+
+	//Now add the fact nodes.
+	int no_nodes_last = last_layer_nodes.size(); 
+
+	//Initial fact value
+	double P = 1; 
+
+	for(int i = 0; i < no_nodes_last ;++i){
+		for (int j = 0; j < fact_nodes; ++j){
+			if(j%2 == 0)
+				P = 0.99;
+			else if(j%3 == 0)
+				P = 0.98;
+			else if(j%4 == 0)
+				P = 0.97; 
+
+			int node_id = G.addnode(AUTO_ID,Fact,P);
+			G.addedge(node_id,last_layer_nodes[i]);
+		}
+	}
 	return G; 
 }
 

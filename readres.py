@@ -24,7 +24,7 @@ def readres(path,i):
 	else:
 		return 0.0
 
-def recallres(size):
+def recallres(size,ex_time,silent):
 	ts = datetime.datetime.now() 
 	path = "baron/"
 	fname = path+str(ts)+".csv"
@@ -47,18 +47,20 @@ def recallres(size):
 		writer.writerow(rec) 
 
 	f.close()
-	print("Time: ", end=" ")
+	if silent !=1:
+		print("Time: ", end=" ")
 	t = [x[1] for x in data]
-	maxtime = max(t) #max(data, key=lambda x: x[1])[1]
-	mintime = min(t) #min(data, key=lambda x: x[1])[1]
-	avgtime = stats.mean(t) #(maxtime+mintime)/2
+	maxtime = round(max(t)+ex_time,3) #max(data, key=lambda x: x[1])[1]
+	mintime = round(min(t)+ex_time,3) #min(data, key=lambda x: x[1])[1]
+	avgtime = round(stats.mean(t)+ex_time,3) #(maxtime+mintime)/2
 	totaltime = sum(t)
 	maxobj = max(data, key=lambda x:x[2])[2]
 	minobj = min(data, key=lambda x:x[2])[2]
 	avgobj = (maxobj+minobj)/2
-	print("Max:", maxtime, "Min:", mintime, "Avg:", avgtime, "Total:", totaltime)
-	print("Obj: ", end=" ")
-	print("Max:", maxobj, "Min:",minobj, "Avg:",avgobj)
+	if silent != 1:
+		print("Max:", maxtime, "Min:", mintime, "Avg:", avgtime, "Total:", totaltime)
+		print("Obj: ", end=" ")
+		print("Max:", maxobj, "Min:",minobj, "Avg:",avgobj)
 
 	#Now purge the files
 	files = [f for f in listdir(path) if f.find(".tim") > -1 or f.find(".res") > -1 or f.find(".opt") > -1 or f.find("program_") > -1 ]
@@ -66,7 +68,11 @@ def recallres(size):
 		os.remove(path+f)
 
 size = int(sys.argv[1])
+ex_time = float(sys.argv[2])
+silent = int(sys.argv[3])
+
+
 #print('Size: ', size) 
 
-recallres(size)
+recallres(size,ex_time,silent)
 #print("------------------------------")

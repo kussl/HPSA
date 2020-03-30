@@ -73,8 +73,11 @@ Some frequently used graph configurations.
 */
 void graph_options(Graph &G, int option){
 	switch (option){
+		case 0:
+			generate_graph(G,3,2,2,2); 
+			break;
 		case 1: 
-			generate_graph(G, 4,6,8,15);
+			generate_graph(G,4,6,8,15);
 			break; 
 		case 2: 
 			generate_graph(G,5,6,8,15);
@@ -103,6 +106,30 @@ void graph_options(Graph &G, int option){
 		case 10:
 			generate_graph(G,8,8,10,15);
 			break;
+		case 11:
+			generate_graph(G,8,9,16,10);
+			break;
+		case 12:
+			generate_graph(G,8,10,16,10);
+			break;
+		case 13:
+			generate_graph(G,12,10,10,14);
+			break;
+		case 14:
+			generate_graph(G,8,10,16,14);
+			break;
+		case 15:
+			generate_graph(G,9,10,16,14);
+			break;
+		case 16:
+			generate_graph(G,10,10,16,14);
+			break;
+		case 17:
+			generate_graph(G,12,10,16,14);
+			break;
+		case 18:
+			generate_graph(G,12,10,16,18);
+			break;
 	}	
 
 }
@@ -125,11 +152,13 @@ int main(int argc, char**argv){
 
 	choice = argv[2]; 
 
-	if(!strcmp(choice,"--propagate")){
+	if(!strcmp(choice,"--graph")){
+		G.print(SOL_PATH+"graph.dot"); 
+	}
+	else if(!strcmp(choice,"--propagate")){
 		propagate_probabilities(G, P); 
 	}
 	else if(!strcmp(choice,"--improve")){
-		cout<<"Improvement.\n";
 		improve_security(G, P); 
 	}
 

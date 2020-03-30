@@ -51,7 +51,7 @@ std::string rule_constraints(Graph &G, Node n, int e, std::vector<Instrument> v,
 		std::string tid = std::to_string(n.nodeid())+"_"+std::to_string(k); 
 		if(std::find(v[k].targets.begin(), v[k].targets.end(), n.nodeid()) != v[k].targets.end()){
 			constraints+= "((1-t"+tid+")+t"+tid+"*(1-"+std::to_string(v[k].nodeP())+"))*"; 
-			binary_constraints+= "e_t"+tid+": t"+tid+" - t"+tid+"^2 == 0;\n";
+			//binary_constraints+= "e_t"+tid+": t"+tid+" - t"+tid+"^2 == 0;\n";
 			found = true; 
 			tnodes.push_back(tid); 
 		}
@@ -237,9 +237,10 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 
 	/*
 	Add the extra constraints for t variables
-	*/
+	
 	for(int i = 0; i < tnodes.size(); ++i)
 		eq_declarations+="e_t"+tnodes[i]+",";
+	*/
 
 	eq_declarations.replace(eq_declarations.length()-1,1,";\n\n");
 
@@ -327,7 +328,7 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G,
 	std::vector<Node>::iterator onit = nit; 
 	std::vector<std::string> vars,tvars;
 	std::string aux_declarations = "VARIABLES "; 
-	std::string imp_declarations = "VARIABLES ";
+	std::string imp_declarations = "BINARY_VARIABLES ";
 	int imp_i = 0;  
 
 	for (int i=0; i<n; ++i){
@@ -369,11 +370,11 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G,
 	onit = nit; 
 
 	//Set LB and UP: 
-	declaration += "\n";
+	//declaration += "\n";
 	aux_declarations.erase(aux_declarations.size() - 1);
 
 	//declaration += aux_declarations+";\n"; 
-	declaration += imp_declarations+";\n";
+	declaration = imp_declarations+";\n"+declaration+"\n";
 
 	declaration += "LOWER_BOUNDS{\n"; 
 

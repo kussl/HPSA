@@ -91,6 +91,7 @@ public:
 
 	void addpredecessors(int node_id, int g_node_id,Graph &G); 
 	std::vector<Graph> partitiongraph();
+	Graph combine_subtrees(std::vector<Graph> X);
 
 	std::vector<int> imp_candidate_nodes(); 
 	int count_type(NType type); 
@@ -103,6 +104,7 @@ public:
 	GraphGenerator() {
 	}
 	Graph treetopology(int goallayers=1, int subgoals=2, int rules=2, int facts=2);
+	Graph hierarchical_topology(int L, int goal_nodes, int rule_nodes, int fact_nodes); 
 };
 
 class Instrument : public Node {
