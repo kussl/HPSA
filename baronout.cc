@@ -192,7 +192,11 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 	Declare the constraints. 
 	Add an extra constraint to limit the number of selections.
 	*/
-	for(int i =0; i<n+1; ++i){
+	int no_equations = n; 
+	if(v.size()>0)
+		no_equations+=1; 
+
+	for(int i =0; i<no_equations; ++i){
 		eq_declarations+= "e"+std::to_string(i);
 		if (onit->nodetype()==Goal){
 			//constraints+= ",e"+std::to_string(i)+"g";
@@ -244,7 +248,8 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 
 	eq_declarations.replace(eq_declarations.length()-1,1,";\n\n");
 
-	constraints+= add_improvement_constraints(tnodes, e, m); 
+	if(tnodes.size()>0)
+		constraints+= add_improvement_constraints(tnodes, e, m); 
 	
 	return eq_declarations+ constraints; 
 }
@@ -374,7 +379,10 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G,
 	aux_declarations.erase(aux_declarations.size() - 1);
 
 	//declaration += aux_declarations+";\n"; 
-	declaration = imp_declarations+";\n"+declaration+"\n";
+	if(tvars.size()>0)
+		declaration = imp_declarations+";\n"+declaration+"\n";
+	else
+		declaration = declaration+"\n";
 
 	declaration += "LOWER_BOUNDS{\n"; 
 
