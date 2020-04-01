@@ -104,7 +104,7 @@ void create_targets(Graph G, std::vector<Instrument> &v, int k){
 	int i = 0; 
 	for(int j = 0; j < k; ++j){
 		std::vector<int> targets;
-		Instrument t = Instrument(P); 
+		Instrument t = Instrument(P*.9); 
 		
 		for(int s = 0; i < no_rule_nodes && s < nodes_per_inst; ++i, ++s){
 			targets.push_back(rule_nodes[i]); 
@@ -281,7 +281,7 @@ void improve_BARON_target_partition(Graph G, int m, int k, int P){
 	
 	int splits = ceil(log2(tau));
 	int placements_per_split = ceil(tau/splits); 
-	k = splits; 
+	
 
 	/*
 	We'll artificially set k to the number of splits.
@@ -298,7 +298,7 @@ void improve_BARON_target_partition(Graph G, int m, int k, int P){
 	cout<<"Total acceptable placements: m="<<m<<endl; 
 	cout<<"Number of improvement targets: tau="<<tau<<endl; 
 	cout<<"Number of target splits="<<splits<<endl; 
-	cout<<"Placements per split="<<placements_per_split<<endl; 
+	cout<<"Targets per split="<<placements_per_split<<endl; 
 
 
 	for(int i = 0; i < k; ++i){
@@ -334,6 +334,8 @@ void improve_security(Graph G, int P){
 	//m = X.size(); 
 	// cout<<"Parallel (tree partition): \n"; 
 	// improve_BARON_tree_partition(G,X,m,k,P);  
+	int no_rule_nodes = G.count_type(Rule); 
+	k = ceil(log2(no_rule_nodes));
 	cout<<"Serial: \n";
 	improve_BARON_serial(G, m, k);
 	cout<<"Parallel (target partition): \n"; 
