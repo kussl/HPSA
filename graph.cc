@@ -238,6 +238,9 @@ void Graph::addpredecessors(int node_id, int g_node_id, Graph &G){
 }
 
 
+/*
+Partition graph and preserve node ids.  
+*/
 std::vector<Graph> Graph::partitiongraph(){
 	std::vector<Node>::iterator it; 
 	std::vector<Graph> X; 
@@ -375,6 +378,9 @@ Graph GraphGenerator::hierarchical_topology(int L, int goal_nodes, int rule_node
 	last_layer_nodes.push_back(ultimate_goal);
 	NType this_layer_type = Goal;
 
+	std::default_random_engine generator;
+  	std::uniform_real_distribution<double> distribution(0.8,1.0);
+
 	for(int l = 1; l < (L-1); ++l){
 		std::vector<int> this_layer_nodes;
 		int no_nodes_to_add = rule_nodes; 
@@ -415,12 +421,14 @@ Graph GraphGenerator::hierarchical_topology(int L, int goal_nodes, int rule_node
 
 	for(int i = 0; i < no_nodes_last ;++i){
 		for (int j = 0; j < fact_nodes; ++j){
-			if(j%2 == 0)
-				P = 0.99;
-			else if(j%3 == 0)
-				P = 0.98;
-			else if(j%4 == 0)
-				P = 0.97; 
+			// if(j%2 == 0)
+			// 	P = 0.99;
+			// else if(j%3 == 0)
+			// 	P = 0.98;
+			// else if(j%4 == 0)
+			// 	P = 0.97; 
+
+			P = distribution(generator);
 
 			int node_id = G.addnode(AUTO_ID,Fact,P);
 			G.addedge(node_id,last_layer_nodes[i]);

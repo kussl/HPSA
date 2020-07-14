@@ -27,9 +27,9 @@ def readres(path,i):
 def recallres(size,ex_time,silent):
 	ts = datetime.datetime.now() 
 	path = "baron/"
-	fname = path+str(ts)+".csv"
-	f = open(fname,"w")
-	writer = csv.writer(f) 
+	# fname = path+str(ts)+".csv"
+	# f = open(fname,"w")
+	# writer = csv.writer(f) 
 	data = [] 
 	filenames = os.listdir(path) 
 	filenames = [f.split('.')[0] for f in filenames if f.find('.tim') > -1]
@@ -44,9 +44,9 @@ def recallres(size,ex_time,silent):
 		rec.append([i,t,r])
 		data.append([i,t,r])
 
-		writer.writerow(rec) 
+		#writer.writerow(rec) 
 
-	f.close()
+	#f.close()
 	if silent !=1:
 		print("Time: ", end=" ")
 	t = [x[1] for x in data]

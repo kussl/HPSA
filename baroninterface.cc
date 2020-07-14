@@ -135,7 +135,7 @@ void readsolution(std::vector<Graph> &X){
 
 		//Now collect the results and record them in the graph.
 		while( getline(file, line, ' ')){
-			if(line.find("x")!=string::npos){
+			if(line.find("x")!=string::npos && line.find("y")==string::npos){
 				//Get the variable index.
 				char *dup = strdup(line.c_str());
 				char *token = strtok(dup, "			");

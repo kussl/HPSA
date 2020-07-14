@@ -150,6 +150,8 @@ int main(int argc, char**argv){
 
 	graph_options(G, atoi(argv[1])); 
 
+	cout<<"Graph generated.\n";
+
 	choice = argv[2]; 
 
 	if(!strcmp(choice,"--graph")){

@@ -135,6 +135,42 @@ int all_rule_nodes_targets(Graph G, std::vector<Instrument> &v, int k){
 	return tau; 
 }
 
+/*
+Some of the rule nodes apply. 
+*/
+int some_rule_nodes_targets(Graph G, std::vector<Instrument> &v, int k){
+	std::vector<int> rule_nodes = G.imp_candidate_nodes();
+	int N = rule_nodes.size(); 
+	int no_rule_nodes = ceil(log2(N));
+
+	/*
+	This should exclude the predecessors children of the sink.  
+	*/
+	std::list<int> preds = G.predecessors(0);
+
+	double P = 1.0; 
+	int tau = no_rule_nodes; //number of targets for each instrument. 
+	for(int i = 0; i < k; ++i){
+		std::vector<int> targets;
+		Instrument t = Instrument(P*=.9); 
+		for(int j=0; j< N && no_rule_nodes > 0; ++j){
+			bool in_preds = false; 
+			for(auto & e : preds){
+				if (e == rule_nodes[j])
+					in_preds = true; 
+			}
+			if (in_preds || (rule_nodes[j]%4 == 0))
+				continue; 
+			--no_rule_nodes; 
+			targets.push_back(rule_nodes[j]); 
+			//cout<<"target: "<<rule_nodes[j]<<endl;
+		}
+		t.set_targets(targets); 
+		v.push_back(t); 
+	}
+	return tau; 
+}
+
 
 std::string produce_single_file(Graph G, int index, std::vector<Instrument> v, int m){
 	std::string spec = create_baron_file(G, index, v, m);
@@ -148,11 +184,9 @@ std::string produce_single_file(Graph G, int index, std::vector<Instrument> v, i
 }
 
 
-void improve_BARON_serial(Graph G, int m, int k){
+void improve_BARON_serial(Graph G, std::vector<Instrument> &v, int tau, int m, int k){
 	int no_rule_nodes = G.count_type(Rule); 
-	std::vector<Instrument> v; 
-	int tau = all_rule_nodes_targets(G, v, k); 
-	
+		
 	cout<<"Number of nodes: "<<G.size()<<endl; 
 	cout<<"Number of rule nodes: "<<no_rule_nodes<<endl; 
 	cout<<"Number of instrument types: k="<<k<<endl; 
@@ -165,12 +199,15 @@ void improve_BARON_serial(Graph G, int m, int k){
 	collectres(1, 0.0, false); 
 }
 
-void improve_BARON_tree_partition(Graph G, std::vector<Graph> X, int m, int k, int P){
+int improve_BARON_tree_partition(Graph G, std::vector<Graph> X, int m, int k, int P){
 	size_t size = 0; 
 	//Number of subproblems to solve. 
 	size = X.size(); 
+
 	int no_rule_nodes = G.count_type(Rule); 
 	int tau = no_rule_nodes; 
+
+	m = size; 
 	
 	//To hold the names of BARON files for each subproblem.
 	std::vector<std::string> names;
@@ -217,9 +254,9 @@ void improve_BARON_tree_partition(Graph G, std::vector<Graph> X, int m, int k, i
 
 	//Determine m for the final tree: 
 	std::vector<int> pred = AG.preds(0);
-	int final_m = pred.size(); 
+	int final_m = 1; //pred.size(); 
 	if(m==1){
-		final_m = 1; 
+		final_m = 1;  
 	}
 
 	if( m < size){
@@ -251,11 +288,13 @@ void improve_BARON_tree_partition(Graph G, std::vector<Graph> X, int m, int k, i
 		included in the subtrees with solutions from subtrees that were not improved.
 		*/
 		cout<<"S3: \n";
-		improve_BARON_serial(AG,final_m,k);
+		//improve_BARON_serial(AG,final_m,k);
 	}
 	else { 
-		improve_BARON_serial(AG,final_m,k);
+		//improve_BARON_serial(AG,final_m,k);
 	}
+
+	return m; 
 }
 
 void improve_BARON_target_partition(Graph G, int m, int k, int P){
@@ -326,21 +365,78 @@ void propagate_probabilities(Graph G, int P){
 }
 
 
-void improve_security(Graph G, int P){
-	int m = 1;
-	int k = 1; 
+/*
+This function uses the given subtrees to try the m improvement 
+in each subtree according to the applicable rule nodes given in v. 
+
+*/
+int improve_BARON_tree_partition_new(Graph G, std::vector<Instrument> v, int tau, int m, int k, int P){
+	
 	//Partition the tree to multiple subtrees
 	std::vector<Graph> X = G.partitiongraph(); 
-	//m = X.size(); 
-	// cout<<"Parallel (tree partition): \n"; 
-	// improve_BARON_tree_partition(G,X,m,k,P);  
-	int no_rule_nodes = G.count_type(Rule); 
-	k = ceil(log2(no_rule_nodes));
-	cout<<"Serial: \n";
-	improve_BARON_serial(G, m, k);
-	cout<<"Parallel (target partition): \n"; 
-	improve_BARON_target_partition(G,m,k,P);
+	
+	//To hold the names of BARON files for each subproblem.
+	std::vector<std::string> names;
+	int n_sub_probs = X.size(); 
+
+
+	for (int i = 0; i < n_sub_probs; ++i){
+
+		//Produce a BARON file for subproblem X[i] to improve for m places 
+		//on the given targets v. 
+		//Targets are actual rule node indexes. Given that the partitions preserve 
+		//node numbers, this will work for all subtrees. 
+		std::string name = produce_single_file(X[i], i, v, m);
+		names.push_back(name); 
+	}
+
+
+	/*
+	Solve the improvement in each subproblem. 
+	*/
+	baron_interface(names, P);
+	//Record the time for the extra effort. 
+	const clock_t begin_time = clock();
+	cout<<"Reading solutions."<<endl; 
+
+	
+	//Read the solution and combine the subtrees back into a full attack tree.
+	
+	readsolution(X);
+	// for (auto & g : X){
+	// 	auto it = g.graph_nodes(); 
+	// 	cout<<it->nodeP()<<endl; 
+	// }
+
+	Graph AG = G.combine_subtrees(X); 
+	double preparation_time = float( clock () - begin_time ) /  CLOCKS_PER_SEC; 
+	cout<<"S1: \n";
+
+	collectres(n_sub_probs, preparation_time, false); 
+
+	//Do the final computation for the combined tree. 
+	propagate_probabilities_serial(AG); 
+
+	return m; 
 }
+
+void improve_security(Graph G, int P){
+	int m = 4;
+	int k = 1; 
+	
+	int no_rule_nodes = G.count_type(Rule); 
+	std::vector<Instrument> v; 
+	int tau = some_rule_nodes_targets(G, v, k); 
+	
+	cout<<"Serial computation: \n";
+
+	improve_BARON_serial(G, v, tau, m, k);
+	
+	cout<<"Parallel (tree partition): \n"; 
+	improve_BARON_tree_partition_new(G,v,tau,m,k,P);  
+	
+}
+
 
 
 void generate_graph(Graph &G, int goallayers, int subgoals, int rules, int facts){

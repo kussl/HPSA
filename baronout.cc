@@ -95,7 +95,7 @@ std::string goal_constraints(Graph &G, Node n, int e){
 		constraints+="y"+std::to_string(j)+"x"+nids+"*x"+std::to_string(P[j])+"+";
 		
 	}
-	constraints.replace(constraints.length()-1,1,"= 0;\n");
+	constraints.replace(constraints.length()-1,1,"== 0;\n");
 
 	/*add constraint on aux variables. */
 	constraints+="e"+std::to_string(e)+ "g: "; 
@@ -123,10 +123,13 @@ std::string add_improvement_constraints(std::vector<std::string> rulenodes, int 
 	
 	std::string total; 
 	if(m <= 0)
-		total = std::to_string(rulenodes.size()-1); 
+		total = std::to_string(no_rule_nodes-1); 
 	else 
 		total = std::to_string(m); 
 
+	if (m > no_rule_nodes) {
+		total = std::to_string(no_rule_nodes);
+	}
 
 	constraints.replace(constraints.length()-1,1," == "+total+";\n");
 	return constraints; 
@@ -146,7 +149,7 @@ std::string add_baron_constraints(Graph &G){
 	for(int i =0; i<n; ++i){
 		constraints+= "e"+std::to_string(i);
 		if (onit->nodetype()==Goal){
-			//constraints+= ",e"+std::to_string(i)+"g";
+			constraints+= ",e"+std::to_string(i)+"g";
 		}
 		constraints+= ",";
 		++onit; 
@@ -163,7 +166,7 @@ std::string add_baron_constraints(Graph &G){
 			rulenodes.push_back(nit->nodeid()); 
 		}
 		else if (nit->nodetype()==Goal) {
-			constraints += goal_constraints_avg(G, *nit, e); 
+			constraints += goal_constraints(G, *nit, e); 
 		}
 		else if (nit->nodetype()==Fact){
 			constraints+="e"+std::to_string(e)+": x"+std::to_string(nit->nodeid())+"==";
@@ -187,30 +190,14 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 	std::vector<int> rulenodes;
 	std::vector<std::string> tnodes;
 	int e =0; 
-	
-	/*
-	Declare the constraints. 
-	Add an extra constraint to limit the number of selections.
-	*/
-	int no_equations = n; 
-	if(v.size()>0)
-		no_equations+=1; 
-
-	for(int i =0; i<no_equations; ++i){
-		eq_declarations+= "e"+std::to_string(i);
-		if (onit->nodetype()==Goal){
-			//constraints+= ",e"+std::to_string(i)+"g";
-		}
-		eq_declarations+= ",";
-		++onit; 
-	}
-
-	
+		
 	e = 0; 
 
 	/*
 	For each node (depending on type), add the corresponding constraint. 
 	*/
+
+	bool applicable = false; 
 
 	for (int i=0; i<n; ++i){
 		int nodeid = nit->nodeid(); 
@@ -221,6 +208,7 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 			
 			std::string c = rule_constraints(G, *nit, e, v, tnodes, found);  
 			if(found){
+				applicable = true; 
 				constraints += c; 
 			}
 			else  { 
@@ -229,7 +217,7 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 			rulenodes.push_back(nit->nodeid()); 
 		}
 		else if (nit->nodetype()==Goal) {
-			constraints += goal_constraints_avg(G, *nit, e); 
+			constraints += goal_constraints(G, *nit, e); 
 		}
 		else if (nit->nodetype()==Fact){
 			constraints+="e"+std::to_string(e)+": x"+std::to_string(nit->nodeid())+"==";
@@ -240,6 +228,25 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 	}
 
 	/*
+	Declare the constraints. 
+	Add an extra constraint to limit the number of selections.
+	*/
+
+	int no_equations = n; 
+	if(v.size()>0 && applicable)
+		no_equations+=1; 
+
+	for(int i =0; i<no_equations; ++i){
+		eq_declarations+= "e"+std::to_string(i);
+		if (onit->nodetype()==Goal){
+			eq_declarations+= ",e"+std::to_string(i)+"g";
+		}
+		eq_declarations+= ",";
+		++onit; 
+	}
+
+
+	/*
 	Add the extra constraints for t variables
 	
 	for(int i = 0; i < tnodes.size(); ++i)
@@ -248,8 +255,9 @@ std::string add_baron_constraints(Graph &G, std::vector<Instrument> v, int m){
 
 	eq_declarations.replace(eq_declarations.length()-1,1,";\n\n");
 
-	if(tnodes.size()>0)
+	if(tnodes.size()>0){
 		constraints+= add_improvement_constraints(tnodes, e, m); 
+	}
 	
 	return eq_declarations+ constraints; 
 }
@@ -269,7 +277,7 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G)
 	std::string declaration = "VARIABLES "; 
 	std::vector<Node>::iterator onit = nit; 
 	std::vector<std::string> vars;
-	std::string aux_declarations = "VARIABLES "; 
+	std::string aux_declarations = "BINARY_VARIABLES "; 
 
 	for (int i=0; i<n; ++i){
 		declaration+= "x"+std::to_string(onit->nodeid());
@@ -277,7 +285,7 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G)
 
 		if(onit->nodetype()==Goal){
 			//add aux variables  
-			//aux_declarations+= add_aux_vars(G, vars, onit->nodeid()); 
+			aux_declarations+= add_aux_vars(G, vars, onit->nodeid()); 
 		}
 
 		if (i < (n-1)) {
@@ -293,7 +301,7 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G)
 	//Set LB and UP: 
 	declaration += "\n";
 	aux_declarations.erase(aux_declarations.size() - 1);
-	//declaration += aux_declarations+";\n"; 
+	declaration = aux_declarations+";\n"+declaration; 
 
 	declaration += "LOWER_BOUNDS{\n"; 
 
@@ -332,7 +340,7 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G,
 	std::string declaration = "VARIABLES "; 
 	std::vector<Node>::iterator onit = nit; 
 	std::vector<std::string> vars,tvars;
-	std::string aux_declarations = "VARIABLES "; 
+	std::string aux_declarations = "BINARY_VARIABLES "; 
 	std::string imp_declarations = "BINARY_VARIABLES ";
 	int imp_i = 0;  
 
@@ -343,7 +351,7 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G,
 
 		if(onit->nodetype()==Goal){
 			//add aux variables  
-			//aux_declarations+= add_aux_vars(G, vars, onit->nodeid()); 
+			aux_declarations+= add_aux_vars(G, vars, onit->nodeid()); 
 		}
 
 		else if(onit->nodetype()==Rule){
@@ -378,7 +386,7 @@ std::string declare_baron_vars(int n, std::vector<Node>::iterator nit, Graph &G,
 	//declaration += "\n";
 	aux_declarations.erase(aux_declarations.size() - 1);
 
-	//declaration += aux_declarations+";\n"; 
+	declaration = aux_declarations+";\n"+declaration; 
 	if(tvars.size()>0)
 		declaration = imp_declarations+";\n"+declaration+"\n";
 	else
